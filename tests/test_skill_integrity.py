@@ -173,6 +173,7 @@ def test_all_reference_files_exist() -> None:
         "prompts/sheet.md",
         "prompts/task-assignment.md",
         "prompts/kill-chain.md",
+        "prompts/competitive-landscape.md",
         "prompts/clarity.md",
         "prompts/review.md",
         "prompts/setup.md",

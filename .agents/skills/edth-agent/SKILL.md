@@ -105,6 +105,8 @@ Artefacts under `artefacts/`. State resumable via `artefacts/state.json`.
 
 **Special stages (between phases):**
 - Kill Chain Mapping — after Phase 3. See `references/prompts/kill-chain.md`.
+- Competitive Landscape Pass — after Phase 2. See `references/prompts/competitive-landscape.md`.
+- Innovation Competitive Scan — during Phase 4. See `references/prompts/phase-4.md`.
 - One-Sentence Clarity — after Phase 5. See `references/prompts/clarity.md`.
 - Pitch Review — after Phase 7 or ad-hoc. See `references/prompts/review.md`.
 
@@ -188,6 +190,17 @@ Read `references/prompts/phase-2.md`, then:
 11. `mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
 12. Validate, time + timebox, audit, approve.
 
+#### Competitive Landscape Pass
+
+Runs after Phase 2 (problem chosen), before Phase 3 (decompose).
+Read `references/prompts/competitive-landscape.md`, then:
+
+1. `⚙️  Competitive Landscape — searching for existing solutions...`
+2. Execute prompt: 4 queries, classify competitors, assess positioning.
+3. Append `## Competitive Landscape` to `artefacts/02_candidate_problem.md`.
+4. `✅ Competitive landscape appended to 02_candidate_problem.md.`
+5. Write audit entry.
+
 ### Phase 3 — Sub-problem decompose
 
 Read `references/prompts/phase-3.md`, then:
@@ -212,12 +225,14 @@ Runs after Phase 3 completes. Read `references/prompts/kill-chain.md`, then:
 
 Read `references/prompts/phase-4.md`, then:
 
-1. `⚙️  Phase 4 — Ideation: generating ideas with 7 techniques...`
+1. `⚙️  Phase 4 — Ideation: generating ideas with 8 techniques...`
 2. `mark_phase_in_progress(state, 4)`. Save state.
-3. Load `03_chosen_sub_problem.md`. Execute prompt.
-4. Dedupe via `agent.ideation.dedupe_ideas()`.
-5. In real mode: offer user to add 1-3 ideas.
-6. Panel: rate every idea 1-5.
+3. Load `03_chosen_sub_problem.md` + `02_candidate_problem.md` `## Competitive Landscape`.
+4. Execute prompt: 20+ ideas with gap-exploit technique, dedupe.
+5. `⚙️  Phase 4 — Ideation: competitive scan of {N} unique ideas...`
+6. Execute Innovation Competitive Scan: 1-2 web searches per idea.
+7. `⚙️  Phase 4 — Ideation: panel rating {N} ideas (with competitive signal)...`
+8. Panel rates each idea 1-5 informed by competitive scan.
 7. Sort, surface top 5 + "judges hated this".
 8. Write via `agent.ideation.write_solution_candidates()`. `✅ Phase 4 — Ideation: {N} ideas written.`
 9. `mark_phase_completed(state, 4, artefacts_dir / "04_solution_candidates.md")`. Save state.
