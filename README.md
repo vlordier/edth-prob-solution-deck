@@ -174,4 +174,6 @@ tests/                ← 104 pytest tests
 
 ## Design doc
 
-See `docs/superpowers/specs/2026-06-02-edth-agent-design.md` for the full spec and architecture.
+## Documentation
+
+See `docs/superpowers/plans/` for the implementation plan.
