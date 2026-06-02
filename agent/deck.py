@@ -37,11 +37,23 @@ def render_deck(artefacts_dir: Path, context: dict) -> Path:
     renderer = best_renderer()
     if renderer == "marp":
         import subprocess
-        marp = __import__("agent.render", fromlist=["detect_marp"]).detect_marp()
-        subprocess.run([str(marp), str(deck_md_path), "-o", str(artefacts_dir / "07_deck.html")], check=True, capture_output=True)
+        from agent.render import detect_marp
+        marp_path = detect_marp()
         try:
-            subprocess.run([str(marp), str(deck_md_path), "--pdf", "-o", str(artefacts_dir / "07_deck.pdf")], check=True, capture_output=True)
-        except subprocess.CalledProcessError:
+            subprocess.run(
+                [str(marp_path), str(deck_md_path), "-o", str(artefacts_dir / "07_deck.html")],
+                check=True, capture_output=True, timeout=60,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            import logging
+            logging.getLogger("agent.deck").warning("Marp HTML render failed: %s. Falling back.", exc)
+            return render_html_deck(artefacts_dir, md_text)
+        try:
+            subprocess.run(
+                [str(marp_path), str(deck_md_path), "--pdf", "-o", str(artefacts_dir / "07_deck.pdf")],
+                check=True, capture_output=True, timeout=60,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             pass
         return artefacts_dir / "07_deck.html"
     if renderer == "pptx":

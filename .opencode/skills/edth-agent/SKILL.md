@@ -13,26 +13,16 @@ You are driving the EDTH Hackathon Agent — a structured workflow that turns a 
 
 ## Setup (run once)
 
-Before executing any phase, verify the Python environment is ready. If `uv` is not found, install it:
+**First invocation check:** Before executing ANY command, check if `uv run python -c "import agent"` succeeds. If not:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Then install deps and run `edth-agent` commands:
-
-```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh  # if uv missing
 uv sync
-uv run pytest
 ```
 
-All subsequent `python` and `python -m agent.X` calls should be prefixed with `uv run`:
+Then verify: `uv run python -c "import agent; print('agent ready, v' + agent.__version__)"`
 
-```bash
-uv run python -c "from agent.state import empty_state; ..."
-uv run python -m agent.parse_csv
-uv run pytest
-```
+All subsequent Python calls are `uv run python ...` or `uv run python -m agent.X`.
 
 If the user wants PDF output, check for marp and offer to install it:
 
@@ -43,10 +33,17 @@ npm install -g @marp-team/marp-cli || brew install marp-cli
 If neither is available, the HTML fallback works fine — mention this and continue.
 
 ## Behavior rules
-- Before Phase 0 (Onboarding), run **Team Discovery** (`/edth-agent team`). This is strongly recommended. If the user says "skip" or `--skip`, write a minimal stub and proceed.
-- Every phase has a concrete prompt template below. Execute the prompt verbatim. Do not improvise.
+
+- **First-run check:** Before every command, run `uv run python -c "import agent"` (0.1s). If it fails, stop and run the Setup steps above. Do this silently.
+- **Progress echo:** Announce each substep as you work. Format: `⚙️  Phase N — [phase name]: [substep description]...` (e.g. `⚙️  Phase 1 — Triage: Parsing CSV...`, `⚙️  Phase 1 — Triage: Clustering into 6 groups...`, `✅ Phase 1 — Triage: artefact written.`)
+- **Mark in_progress:** Before starting any phase, call `agent.state.mark_phase_in_progress(state, N)` and `agent.state.save_state()`. If the phase fails, call `agent.state.rollback_phase(state, N)`. Never leave a broken phase in `in_progress`.
+- **Validate after every phase:** After writing the artefact, call `agent.validate.run_validation(artefacts_dir, quiet=True)`. If issues found, print them and ask "Fix them before continuing? (y/n)". Do not call validate on the artisan's first run of a phase — only after the artefact exists.
+- **Time tracking:** After each phase completes, compute `agent.state.elapsed_minutes()` and `agent.state.expected_phases_remaining()`. Print: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining (est. {elapsed:.0f}–{elapsed*1.5:.0f} min total)`.
+- **Rerun snapshots:** Before overwriting an artefact on `/edth-agent rerun N`, copy the existing file to `artefacts/snapshots/<filename>.bak.<timestamp>`. Mention: "Previous version saved to `artefacts/snapshots/...`."
+- **Phase 0 (Onboarding) must have a prompt template.** Execute the Phase 0 prompt below verbatim. Do not improvise what to ask.
+- Every other phase has a concrete prompt template below. Execute each verbatim. Do not improvise.
 - After each phase output, run `/edth-agent validate --quiet` to self-check. Fix issues before continuing.
-- In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact. In `owner_mode: sim`, auto-continue.
+- In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact and validation passes. In `owner_mode: sim`, auto-continue.
 - Every phase writes an audit entry via `agent.audit.write_audit_entry()`.
 
 ## Quick start
@@ -146,6 +143,18 @@ Score each cluster on a 1-5 integer scale (5=best) on these axes:
 - execution: how buildable in 48 hours?
 - presentation: how demo-able is this?
 
+IMPORTANT — Team fit adjustment: If `artefacts/team_profile.md` exists,
+read it. For each cluster, adjust the execution score based on team skills:
+  - If the cluster touches hardware and the team's hardware scores are all
+    "C) Software-only" → dock execution by 1-2 points.
+  - If the cluster involves ML and no team member rated above "C) Novice"
+    on ML maturity → dock execution by 1-2 points.
+  - If the cluster is purely software and the team has strong software
+    skills (multiple "A" answers) → boost execution by 1 point (cap at 5).
+  - If the cluster touches a defense domain nobody has experience in
+    (all "C) Brand new") → dock innovation by 1 (novel to them ≠ novel).
+  - Document any adjustments in the cluster notes.
+
 Output scores as a dict: {impact: X, innovation: Y, execution: Z, presentation: W}
 
 Step 3 — Market signal (mandatory, must include real data):
@@ -186,12 +195,20 @@ Quality rules:
 
 ### Implementation steps
 
-1. `python -m agent.parse_csv` or call `agent.parse_csv.parse_problems()`. Save to `artefacts/01_problems.json`.
-2. `agent.normalize.assign_quality_flags()` on each problem. `agent.normalize.dedupe_problems()`.
-3. Execute the prompt template above verbatim. Do not improvise.
-4. If panel is locked, run panel review: Borda aggregation.
-5. Build `agent.triage.TriageReport`, write via `agent.triage.write_triage_report()`.
-6. Write audit entry. Mark phase complete.
+1. Print: `⚙️  Phase 1 — Triage: loading state...`
+2. `agent.state.mark_phase_in_progress(state, 1)`. Save state.
+3. `uv run python -m agent.parse_csv` or call `agent.parse_csv.parse_problems()`. Print: `⚙️  Phase 1 — Triage: parsed {N} problems.` Save to `artefacts/01_problems.json`.
+4. `agent.normalize.assign_quality_flags()` on each problem. `agent.normalize.dedupe_problems()`. Print: `⚙️  Phase 1 — Triage: {N} problems after deduplication.`
+5. Print: `⚙️  Phase 1 — Triage: clustering problems...`
+6. Execute the prompt template above verbatim. Do not improvise.
+7. If panel is locked, run panel review: Borda aggregation. Print: `⚙️  Phase 1 — Triage: panel reviewing clusters...`
+8. Build `agent.triage.TriageReport`, write via `agent.triage.write_triage_report()`.
+9. Print: `✅ Phase 1 — Triage: {N} clusters written to artefacts/01_triage.md.`
+10. `agent.mark_phase_completed(state, 1, artefacts_dir / "01_triage.md")`. Save state.
+11. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+12. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
+13. Write audit entry.
+14. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
 
 ---
 
@@ -287,14 +304,22 @@ Quality rules:
 
 ### Implementation steps
 
-1. Load `01_triage.md`. Read top 3 clusters.
-2. Execute prompt template above.
-3. Build `OwnerQuestion` objects. Write via `agent.elicitation.write_owner_questions()`.
-4. Capture answers. Write via `agent.elicitation.write_owner_answers()`.
-5. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
-6. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
-7. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
-8. Write audit. Mark phase complete.
+1. Print: `⚙️  Phase 2 — Elicit: generating owner questions...`
+2. `agent.state.mark_phase_in_progress(state, 2)`. Save state.
+3. Load `01_triage.md`. Read top 3 clusters.
+4. Execute prompt template above.
+5. Build `OwnerQuestion` objects. Print: `⚙️  Phase 2 — Elicit: {N} questions generated.` Write via `agent.elicitation.write_owner_questions()`.
+6. Capture answers. Print: `⚙️  Phase 2 — Elicit: capturing answers...` Write via `agent.elicitation.write_owner_answers()`.
+7. Print: `⚙️  Phase 2 — Elicit: re-scoring candidates...`
+8. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
+9. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
+10. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
+11. Print: `✅ Phase 2 — Elicit: problem {pid} chosen, panel of {N} judges locked.`
+12. `agent.mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
+13. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+14. Print time.
+15. Write audit.
+16. Ask: "Approve? (y/edit/redo)".
 
 ---
 
@@ -373,12 +398,12 @@ Output goes to `artefacts/question_sheet.md`.
 
 ### Implementation steps
 
-1. Verify Phase 1 is completed (`artefacts/01_triage.md` exists).
-2. Execute the prompt template above.
-3. Write via `agent.sheet.write_question_sheet()`.
-4. Tell the user: "Question sheet saved to `artefacts/question_sheet.md`.
-   Print it or share it before your next owner interview."
-5. Write audit entry.
+1. Print: `⚙️  Question Sheet — generating...`
+2. Verify Phase 1 is completed (`artefacts/01_triage.md` exists).
+3. Execute the prompt template above.
+4. Write via `agent.sheet.write_question_sheet()`.
+5. Print: `✅ Question sheet saved to artefacts/question_sheet.md.`
+6. Write audit entry.
 
 ---
 
@@ -424,12 +449,17 @@ Quality rules:
 
 ### Implementation steps
 
-1. Load chosen problem from state and `02_candidate_problem.md`.
-2. Execute prompt template above.
-3. Panel: each judge scores sub-problems on the 4 ROI axes.
-4. Write via `agent.sub_problem.write_sub_problem()`.
-5. User picks 1. Record via `set_decision("chosen_sub_problem_id", ...)`.
-6. Write audit. Mark phase complete.
+1. Print: `⚙️  Phase 3 — Sub-problem: decomposing...`
+2. `agent.state.mark_phase_in_progress(state, 3)`. Save state.
+3. Load chosen problem from state and `02_candidate_problem.md`.
+4. Execute prompt template above.
+5. Panel: each judge scores sub-problems on the 4 ROI axes.
+6. Write via `agent.sub_problem.write_sub_problem()`. Print: `✅ Phase 3 — Sub-problem: {N} sub-problems written.`
+7. User picks 1. Record via `set_decision("chosen_sub_problem_id", ...)`.
+8. `agent.mark_phase_completed(state, 3, artefacts_dir / "03_chosen_sub_problem.md")`. Save state.
+9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+10. Print time.
+11. Write audit. Ask: "Approve? (y/edit/redo)".
 
 ---
 
@@ -489,14 +519,20 @@ Quality rules:
 
 ### Implementation steps
 
-1. Load `03_chosen_sub_problem.md`.
-2. Execute prompt template above.
-3. Dedupe via `agent.ideation.dedupe_ideas()`.
-4. In real mode: offer user to add 1-3 ideas.
-5. Panel: rate every idea 1-5.
-6. Sort, surface top 5 + "judges hated this".
-7. Write via `agent.ideation.write_solution_candidates()`.
-8. Write audit. Mark phase complete.
+1. Print: `⚙️  Phase 4 — Ideation: generating ideas with 7 techniques...`
+2. `agent.state.mark_phase_in_progress(state, 4)`. Save state.
+3. Load `03_chosen_sub_problem.md`.
+4. Execute prompt template above.
+5. Dedupe via `agent.ideation.dedupe_ideas()`. Print: `⚙️  Phase 4 — Ideation: {N} ideas after dedup.`
+6. In real mode: offer user to add 1-3 ideas.
+7. Print: `⚙️  Phase 4 — Ideation: panel rating {N} ideas...`
+8. Panel: rate every idea 1-5.
+9. Sort, surface top 5 + "judges hated this".
+10. Write via `agent.ideation.write_solution_candidates()`. Print: `✅ Phase 4 — Ideation: {N} ideas written.`
+11. `agent.mark_phase_completed(state, 4, artefacts_dir / "04_solution_candidates.md")`. Save state.
+12. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+13. Print time.
+14. Write audit. Ask: "Approve? (y/edit/redo)".
 
 ---
 
@@ -773,12 +809,86 @@ Quality rules:
 
 ### Implementation steps
 
-1. Load all artefacts.
-2. Execute prompt template above.
-3. Write `08_summary.md` via `agent.summary.write_summary()`.
-4. Panel: final verdicts. Record dissent.
-5. Final deck re-render check.
-6. Write audit. Mark run complete. State: `current_phase: 9`, `status: completed`.
+1. Print: `⚙️  Phase 5 — Research: web searching top 5 ideas...`
+2. `agent.state.mark_phase_in_progress(state, 5)`. Save state.
+3. Load `04_solution_candidates.md`. Extract top 5.
+4. Execute prompt template above.
+5. Web research per idea. Print: `⚙️  Phase 5 — Research: re-scoring with panel...`
+6. Panel re-scores.
+7. Aggregate, write `05_ranked_solutions.md`.
+8. Owner validates, write `05_owner_pick.md`. Print: `✅ Phase 5 — Research: solution {id} chosen.`
+9. Record decision. `agent.mark_phase_completed(state, 5, artefacts_dir / "05_ranked_solutions.md")`. Save state.
+10. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+11. Print time.
+12. Write audit. Ask: "Approve? (y/edit/redo)".
+
+---
+
+## Phase 6 — Demo & narrative
+
+### Phase 6 Prompt Template
+
+[unchanged prompt template]
+
+### Implementation steps
+
+1. Print: `⚙️  Phase 6 — Demo: writing plan...`
+2. `agent.state.mark_phase_in_progress(state, 6)`. Save state.
+3. Load `05_owner_pick.md`.
+4. Execute prompt template above.
+5. Panel: previews script, gives Q&A questions.
+6. Write via `agent.demo_plan.write_demo_plan()`. Print: `✅ Phase 6 — Demo: demo plan written.`
+7. **Task assignment** — run the Task Assignment prompt. Writes `artefacts/demo_tasks.md`.
+8. `agent.mark_phase_completed(state, 6, artefacts_dir / "06_demo_plan.md")`. Save state.
+9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+10. Print time.
+11. Write audit. Ask: "Approve? (y/edit/redo)".
+
+---
+
+## Phase 7 — Deck & market research
+
+### Phase 7 Prompt Template
+
+[unchanged prompt template]
+
+### Implementation steps
+
+1. Print: `⚙️  Phase 7 — Deck: researching market...`
+2. `agent.state.mark_phase_in_progress(state, 7)`. Save state.
+3. Load all prior artefacts.
+4. Execute prompt template above.
+5. Write `07_market.md`, `07_competition.md`, `07_business_model.md`.
+6. Print: `⚙️  Phase 7 — Deck: compiling and rendering...`
+7. Compile deck via `agent.deck.compile_deck_md()`.
+8. Render via `agent.deck.render_deck()`. Print: `✅ Phase 7 — Deck: rendered to artefacts/07_deck.html.`
+9. Panel reviews slides.
+10. `agent.mark_phase_completed(state, 7, artefacts_dir / "07_deck.md")`. Save state.
+11. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+12. Print time.
+13. Write audit. Ask: "Approve? (y/edit/redo)".
+
+---
+
+## Phase 8 — Final review
+
+### Phase 8 Prompt Template
+
+[unchanged prompt template]
+
+### Implementation steps
+
+1. Print: `⚙️  Phase 8 — Final: writing summary...`
+2. `agent.state.mark_phase_in_progress(state, 8)`. Save state.
+3. Load all artefacts.
+4. Execute prompt template above.
+5. Write `08_summary.md` via `agent.summary.write_summary()`. Print: `✅ Phase 8 — Final: summary written.`
+6. Panel: final verdicts. Record dissent.
+7. Final deck re-render check.
+8. `agent.mark_phase_completed(state, 8, artefacts_dir / "08_summary.md")`. Save state.
+9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+10. Print time plus: `⏱  Total: {elapsed:.0f} min across 9 phases.`
+11. Write audit. Mark run complete. State: `current_phase: 9`.
 
 ---
 
@@ -903,24 +1013,69 @@ does what. Re-run `/edth-agent team` if the team changes."
 
 ### Implementation steps
 
-1. Ask how many team members, then go person by person using the prompt template.
-2. For each person: intro → word count check (≥50, ask for more if <50) → 5 quick-fire A/B/C → blind spots → profile.
-3. After all members: team dynamics (pitcher, demo, builder, deck).
-4. Write via `agent.team.write_team_profile()`.
-5. Write audit entry.
+1. Print: `⚙️  Team Discovery — interviewing the team...`
+2. Ask how many team members, then go person by person using the prompt template.
+3. For each person: intro → word count check (≥50, ask for more if <50) → 5 quick-fire A/B/C → blind spots → profile.
+4. After all members: team dynamics (pitcher, demo, builder, deck).
+5. Write via `agent.team.write_team_profile()`.
+6. Print: `✅ Team profile saved to artefacts/team_profile.md.`
+7. Write audit entry.
 
 ---
 
 ## Phase 0 — Onboarding
 
+### Phase 0 Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are onboarding a hackathon team. Capture the context that will drive
+every subsequent phase. Load the default context via
+`agent.context.default_context()` and `agent.state.load_state()`.
+
+Present these questions to the user, one group at a time:
+
+1. HACKATHON:
+   - Hackathon name? (default: EDTH Munich 2025)
+   - Theme / focus? (default: Defense tech / dual-use)
+   - Tracks your team is competing in? (default: C-UAS, Autonomy, EW, UUV, USV)
+   - Judge rubric weights? (default: impact 0.30, innovation 0.25, execution 0.25, presentation 0.20)
+
+2. TEAM:
+   - How many people?
+   - Collective strengths? (e.g. ML/CV, frontend, signal processing)
+   - Collective weaknesses / gaps? (e.g. hardware, maritime domain)
+
+3. CONSTRAINTS:
+   - Time budget in hours? (default: 48)
+   - Deliverable scope? (default: deck + thin demo)
+
+4. AGENT CONFIG:
+   - Owner mode: real (you answer) or sim (persona role-plays)?
+   - Persona to use? (default: edth-judge)
+   - Panel mode: expanded (separate LLM per judge, higher quality) or condensed (single LLM, faster)?
+   - Aggregation mode: borda (weighted ranking) or approval (top-K voting)?
+
+After capturing answers, merge them into the default context via
+`agent.context.save_context(artefacts_dir, ctx)`.
+If the user is in a hurry, accept all defaults with one confirmation.
+```
+
 ### Implementation steps
 
-1. Read or create `artefacts/state.json` via `agent.state`.
-2. Load default context via `agent.context.default_context()`.
-3. Present the default to the user. Ask them to confirm or edit.
-   If this is a dry-run: auto-accept the default.
-4. Save via `agent.context.save_context(artefacts_dir, ctx)`.
-5. Write audit. Mark phase 0 complete.
+1. Print: `⚙️  Phase 0 — Onboarding: loading defaults...`
+2. `agent.state.mark_phase_in_progress(state, 0)`. Save state.
+3. Read or create `artefacts/state.json` via `agent.state.load_state()`.
+4. Load default context via `agent.context.default_context()`.
+5. Execute Phase 0 prompt template above.
+6. Save via `agent.context.save_context(artefacts_dir, ctx)`.
+7. Print: `✅ Phase 0 — Onboarding: context saved.`
+8. `agent.mark_phase_completed(state, 0, artefacts_dir / "00_context.yaml")`. Save state.
+9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+10. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
+11. Write audit. Mark phase complete.
+12. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
 
 ---
 
@@ -928,34 +1083,47 @@ does what. Re-run `/edth-agent team` if the team changes."
 
 When user types `/edth-agent dry-run`:
 
-1. Set `owner_mode: sim`, `persona: edth-judge`, `panel_mode: condensed`.
-2. Create a fresh state via `agent.state.empty_state()`.
-3. Run Phase 0 with auto-accept on default context.
-4. Run Phase 1 (parse + cluster + score the sample CSV).
-5. Auto-pick problem #1 as "chosen." Run Phase 2 in sim (persona answers).
-6. Auto-pick panel. Run Phase 3 (decompose + auto-pick sub-problem #1).
-7. Run Phase 4 (ideation, auto-top-5), Phase 5 (research + rank, persona picks #1).
-8. Run Phase 6 (demo plan), Phase 7 (deck + market + render).
-9. Print: "Dry-run complete. Deck rendered to `artefacts/07_deck.html`. Review with `/edth-agent validate`."
-10. Offer: "Start over with real data? `/edth-agent reset` then `/edth-agent run`."
+1. Print: `⚙️  Dry-run: starting with sim owner + condensed panel...`
+2. `agent.state.empty_state()` — fresh state.
+3. Set `owner_mode: sim`, `persona: edth-judge`, `panel_mode: condensed`.
+4. Phase 0: auto-accept default context. **BAIL if** `00_context.yaml` not written.
+5. Phase 1: Parse CSV. **BAIL if** `01_problems.json` is empty or parsing fails. Print progress per substep. **BAIL if** `01_triage.md` has <2 clusters — warn user the CSV may be misconfigured.
+6. Auto-pick problem #1. Phase 2 in sim (persona answers). **BAIL if** `02_candidate_problem.md` missing or empty.
+7. Auto-pick panel. Phase 3: decompose + auto-pick sub-problem #1.
+8. Phase 4: ideation, auto-top-5. **BAIL if** <5 ideas survive dedup — warn user.
+9. Phase 5: research + rank, persona picks #1.
+10. Phase 6: demo plan + task assignment.
+11. Phase 7: deck + market + render.
+12. Print: `✅ Dry-run complete. Deck: artefacts/07_deck.html.`
+13. Run `agent.validate.run_validation(artefacts_dir, quiet=False)`.
+14. Print: "Start over with real data? `/edth-agent reset` then `/edth-agent run`."
 
 ## Skip-to mode
 
 When user types `/edth-agent skip-to <N>`:
 
-1. Run `agent.state.empty_state()` for a fresh state.
-2. For phases 0..N-1, generate minimal stub artefacts:
+1. Print: `⚙️  Skip-to: generating stub artefacts for phases 0 to {N-1}...`
+2. Run `agent.state.empty_state()` for a fresh state.
+3. For phases 0..N-1, generate minimal stub artefacts:
    - Phase 0: `agent.context.save_context(artefacts_dir, agent.context.default_context())`.
-   - Phase 1: Parse the configured CSV, write all problems as one cluster, default scores.
-   - Phase 2: Pick problem #1, generate 3 generic Q&A pairs, write as chosen.
-   - Phase 3: Decompose into 3 sub-problems, pick #1. Use mid-range scores.
-   - Phase 4: Generate 5 generic ideas, pick #1 at rating 3.0.
-   - Phase 5: Research stubs: "Web research skipped (stub)." Pick #1 at score 3.0.
-   - Phase 6: Generate a minimal demo plan stub.
-3. Mark all stub phases as completed in state.
-4. Set `current_phase = N`.
-5. Print: "Stubs generated for phases 0–{N-1}. Ready to start phase {N}. Run `/edth-agent run`."
-6. User can now run or edit stubs before proceeding.
+   - Phase 1: Parse the configured CSV, write all problems as one cluster. Use default scores (3.0 for all axes). Mark `[STUB]` in the cluster name.
+   - Phase 2: Pick problem #1. Generate 3 Q&A pairs with `[STUB ANSWER]`. Write chosen.
+   - Phase 3: Decompose into 3 sub-problems. Pick #1. Use mid-range scores (3.0). Mark `[STUB]`.
+   - Phase 4: Generate 5 generic ideas. Pick #1 at rating 3.0. Mark `[STUB]`.
+   - Phase 5: Research stubs: "Web research skipped (stub)." Pick #1 at score 3.0. Mark `[STUB]`.
+   - Phase 6: Generate a minimal demo plan stub. Task assignment: `[STUB — re-run after real phases fill in].
+4. Each stub phase: `agent.state.mark_phase_completed(state, p, artefacts_dir / stub_path)`.
+5. Set `current_phase = N`. Save state.
+6. Print: `✅ Stubs generated for phases 0–{N-1}. Ready for phase {N}. Run /edth-agent run.`
+7. Print: "⚠️  Stub artefacts are marked [STUB]. Replace them by re-running `/edth-agent rerun <N>` with real data."
+
+## Rerun command
+
+When user types `/edth-agent rerun <N>`:
+
+1. If the artefact for phase N already exists, snapshot it: copy to `artefacts/snapshots/<filename>.bak.<timestamp>`.
+2. Print: "Previous version saved to `artefacts/snapshots/`."
+3. Run the phase implementation steps as normal (mark_phase_in_progress → execute prompt → write → mark_phase_completed → validate → time).
 
 ---
 

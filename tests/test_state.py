@@ -118,3 +118,28 @@ def test_mark_phase_completed_guards_against_phase_9() -> None:
     updated = mark_phase_completed(state, 8, Path("unused.md"))
     assert updated["current_phase"] == 9
     assert updated["phases"]["8"]["status"] == "completed"
+
+
+def test_mark_phase_in_progress() -> None:
+    from agent.state import mark_phase_in_progress
+    state = empty_state()
+    out = mark_phase_in_progress(state, 3)
+    assert out["phases"]["3"]["status"] == "in_progress"
+    assert out["phases"]["3"]["started_at"] is not None
+
+
+def test_rollback_phase() -> None:
+    from agent.state import mark_phase_in_progress, rollback_phase
+    state = empty_state()
+    mark_phase_in_progress(state, 3)
+    out = rollback_phase(state, 3)
+    assert out["phases"]["3"]["status"] == "pending"
+
+
+def test_expected_phases_remaining() -> None:
+    from agent.state import expected_phases_remaining
+    state = empty_state()
+    assert expected_phases_remaining(state) == 9
+    state["phases"]["0"]["status"] = "completed"
+    state["phases"]["1"]["status"] = "completed"
+    assert expected_phases_remaining(state) == 7

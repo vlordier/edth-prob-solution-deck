@@ -122,3 +122,43 @@ def lock_panel(
         "locked": True,
     }
     return state
+
+
+def mark_phase_in_progress(state: dict[str, Any], phase: int) -> dict[str, Any]:
+    """Mark a phase as in_progress. Call before starting any phase work."""
+    state["phases"][str(phase)] = {
+        "status": "in_progress",
+        "artefact": None,
+        "started_at": _now_iso(),
+        "completed_at": None,
+    }
+    return state
+
+
+def rollback_phase(state: dict[str, Any], phase: int) -> dict[str, Any]:
+    """Rollback a phase to pending. Use when a phase fails mid-execution."""
+    state["phases"][str(phase)] = {
+        "status": "pending",
+        "artefact": None,
+        "started_at": None,
+        "completed_at": None,
+    }
+    return state
+
+
+def elapsed_minutes(state: dict[str, Any]) -> float | None:
+    """Return minutes elapsed since started_at, or None if not started."""
+    started = state.get("started_at")
+    if not started:
+        return None
+    started_dt = datetime.fromisoformat(started)
+    return (datetime.now(timezone.utc) - started_dt).total_seconds() / 60.0
+
+
+def expected_phases_remaining(state: dict[str, Any]) -> int:
+    """Number of phases still pending (not completed)."""
+    completed = sum(
+        1 for p in range(9)
+        if state.get("phases", {}).get(str(p), {}).get("status") == "completed"
+    )
+    return max(0, 9 - completed)
