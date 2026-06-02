@@ -114,7 +114,7 @@ Just type `/edth-agent`. The agent auto-checks your environment, resumes from wh
 | `/edth-agent panel <short>` | Free-form chat with one judge in character |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet for owner interviews |
 | `/edth-agent render` | Re-render the deck from current artefacts |
-| `/edth-agent review` | Submit a draft PDF/deck to the 12-judge panel for live Q&A — each judge asks domain-relevant questions |
+| `/edth-agent review` | Submit a draft PDF/deck to the 12-judge panel for live Q&A — each judge asks domain-relevant questions [runs as subagents] |
 | `/edth-agent setup` | Guided first-time setup: uv sync, pre-commit hooks, Exa MCP install |
 
 ## Phases (0–8)
@@ -142,7 +142,8 @@ The agent maintains a panel of 5 judge personas that review every artefact. Libr
 1. After Phase 2, call `/edth-agent panel generate` to auto-pick 5 judges (Jaccard similarity on tags + hard rules).
 2. User can `panel add / remove / replace` before locking.
 3. Panel recorded in `state.json` under `panel.auto_selected`.
-4. `panel_mode: expanded` = one LLM call per judge. `panel_mode: condensed` = all judges in one response. Default: condensed for speed, expanded for phase 5 (final ranking).
+4. `panel_mode: expanded` = one subagent per judge (higher quality, recommended). `panel_mode: condensed` = all judges in one LLM call (faster). Default: expanded for Phases 1, 5, 6, 7 (high-stakes); condensed for Phases 3, 4.
+5. **Relevance gate:** Every judge subagent first checks: "Is my expertise relevant to this topic?" If no (Jaccard < 0.2 on tags vs cluster themes), they return "No relevant questions — my expertise does not directly apply." Judges who stay quiet do NOT ask generic questions.
 
 ### Per-phase panel participation
 
@@ -1012,9 +1013,11 @@ Once you have a clean one-sentence pitch, say:
 
 ## Pitch Review (`/edth-agent review`)
 
-Submits a draft PDF or markdown deck to the full 12-judge panel for
-live Q&A. Each judge asks 2-3 questions relevant to their expertise.
-They do NOT point out flaws directly — they probe the gaps.
+Submits a draft PDF or markdown deck to the 12-judge panel using **subagents**.
+One subagent per judge. Each judge first evaluates: "Is my expertise relevant to
+this topic?" If no, they contribute one tangential question or stay quiet. If yes,
+they ask 2-3 deeply relevant questions. Judges who stay quiet do NOT dilute the
+review with generic questions.
 
 Use this after Phase 7 or 8, before presenting. Also useful ad-hoc
 when you have a last-minute idea and want to stress-test it.
@@ -1028,57 +1031,103 @@ You are convening the full 12-judge panel to review a pitch deck.
 The user has a draft — either an uploaded PDF, a rendered HTML
 deck, or the markdown at `artefacts/07_deck.md`.
 
+STEP 1 — Read the deck:
 Ask the user: "Share your deck PDF or point me to the markdown file."
 Read the deck content (extract text from PDF using built-in tools,
-or read the .md file directly).
+or read the .md file directly). Save the full text as `review_deck`.
 
-After reading the deck, load the FULL 12-judge library from
-`judges/*.yaml`. For EACH judge, ask 2-3 questions as if you are
-sitting in the audience after the 3-minute pitch. Questions must:
+STEP 2 — Dispatch subagents:
+For EACH of the 12 judges (from `judges/*.yaml`), dispatch a subagent
+with this prompt. Use `general-purpose` or `general` agent type.
 
-  1. Be specific to their expertise (pilot asks about kill chain,
-     procurement officer asks about FAR pathway, etc.).
-  2. NOT be "this is wrong" or "this doesn't work." Instead, ask
-     "walk me through..." or "help me understand..." or "what happens
-     when...".
-  3. Quote at least one thing the judge actually read from the deck.
-     "On slide 3 you mention [X]. Can you walk me through [Y]?"
-  4. Probe the gap, not the flaw. If the deck claims "edge-native",
-     the scaling engineer asks "What's the deployment diagram?"
-     If it claims "AI-powered," the skeptic asks "What's the simplest
-     deployed version of this today?"
+SUBAGENT PROMPT (one per judge):
 
-Format output as a Q&A document:
+```
+You are {judge_name} ({judge_short}), {judge_background}.
+Your expertise: {judge_tags}. Your pet peeves: {judge_anti_priorities}.
+
+You are reviewing a hackathon pitch deck. Read the deck below.
+
+RELEVANCE GATE — Before you ask anything, answer honestly:
+  1. Is my expertise directly relevant to this solution's domain?
+     (yes, partially, or no)
+  2. Can I ask questions that no other judge would think to ask
+     because of my specific background?
+
+  - If BOTH answers are "no" or "partially" → STOP. Return empty.
+    "No questions — my expertise ({tags}) does not directly apply
+    to this topic ({detected_topic})." You are staying quiet because
+    generic questions dilute the review.
+
+  - If EITHER answer is "yes" → ask 2-3 questions. Go to the
+    question format below.
+
+QUESTION FORMAT (only if you passed the gate):
+  1. Quote a specific slide, claim, or number from the deck.
+  2. Ask a probing question from your expertise. NOT "this is wrong."
+     Ask "walk me through...", "what happens when...", "help me
+     understand the assumption behind...".
+  3. Explain in one line WHY you're asking — what gap you're probing.
+
+  Example (Viper, military operator, on a C-UAS deck):
+  "On slide 3 you claim 'autonomous detection with 95% accuracy.'
+  Walk me through the engagement sequence: from detection to
+  operator confirmation to kinetic effect. What happens when the
+  operator disagrees with the AI under time pressure?
+  *Why I'm asking: kill chain latency under cognitive load is what
+  separates a demo from a deployed system.*"
+
+Important: if your expertise is off-topic, staying quiet is MORE
+valuable than asking a generic question. Do not feel pressure to
+contribute. The signal-to-noise ratio matters.
+
+DECK:
+{review_deck}
+```
+
+STEP 3 — Collect results:
+After all 12 subagents return, compile:
+  - Judges who contributed questions (list with their questions).
+  - Judges who stayed quiet (list with their reasoning).
+  - Cross-cutting convergences: questions 3+ judges asked in different
+    words — these are the highest-priority gaps.
+  - Hardest question per relevant judge.
+
+Output to console AND write `artefacts/pitch_review.md`:
 
 # Pitch Review — 12-Judge Panel
 ## Deck: [name]
 
-For each judge:
+## Contributing Judges ({N} of 12)
+[Per-judge questions]
 
-### {Short} — {Name}, {Role}
-- **Q1:** "[Question that references a specific slide or claim]"
-  *Why I'm asking:* [1-line explanation of the gap they're probing]
-- **Q2:** "[Question]"
-- **Q3:** "[Question]" (if applicable)
+## Judges Who Stayed Quiet ({M} of 12)
+[Per-judge one-line reason — e.g. "Dr. Tran (EW): topic is optical C2, not spectrum warfare."]
 
-After all 12 judges, add:
+## Cross-Cutting Convergences
+[Questions 3+ judges asked — these MUST be answered before the pitch]
 
-## Urgent Questions (Must Answer Before You Pitch)
-[2-3 questions that converged across 3+ judges — the cross-cutting gaps]
+## Hardest Questions
+[The 2-3 questions that probe the deepest assumptions]
 
-## Hardest Questions (May Come Up Live)
-[2-3 questions from the toughest judges — prepare these answers]
+## Signal Quality
+  - Relevant judges: {N}
+  - Questions asked: {total}
+  - Convergences: {convergence_count}
+  - Rating: [Strong signal | Adequate | Weak signal — too few relevant judges]
 ```
 
 ### Implementation steps
 
-1. Print: `⚙️  Pitch Review — convening the 12-judge panel...`
-2. Ask user for the deck (PDF, HTML, or `artefacts/07_deck.md`).
-3. Extract text. Read `judges/*.yaml` (all 12).
-4. Execute the prompt template above. One at a time, per judge.
-5. Print results to the console. Optionally write to `artefacts/pitch_review.md`.
-6. Print: `✅ Pitch review complete. Questions from all 12 judges.`
-7. Write audit entry.
+1. Print: `⚙️  Pitch Review — reading deck...`
+2. Ask user for deck (PDF, HTML, or `artefacts/07_deck.md`). Extract text.
+3. Print: `⚙️  Pitch Review — dispatching 12 judge subagents...`
+4. Load each judge YAML. Dispatch one subagent per judge. Collect results.
+5. Print: `⚙️  Pitch Review — {N} judges contributed, {M} stayed quiet.`
+6. Compile the review. Write `artefacts/pitch_review.md`.
+7. Print: `✅ Pitch review complete. {total} questions from {N} judges.`
+8. If `Signal Quality` is "Weak signal", print: `⚠️  Only {N} of 12 judges found this relevant — consider whether the problem is too narrow or the deck is missing cross-domain context.`
+9. Write audit entry.
 
 ---
 
