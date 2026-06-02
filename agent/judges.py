@@ -28,3 +28,53 @@ def load_judge_library(judges_dir: Path) -> list[Judge]:
         except (JudgeValidationError, FileNotFoundError, yaml.YAMLError) as exc:
             log.warning("Skipping invalid judge %s: %s", short, exc)
     return out
+
+
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def select_panel(judges_dir: Path, themes: list[str], tags: list[str], *, panel_size: int = 5) -> list[Judge]:
+    """Auto-select a panel of judges for a given problem using Jaccard similarity + hard rules."""
+    library = load_judge_library(judges_dir)
+    if not library:
+        return []
+    problem_set = set(themes) | set(tags)
+    scored = sorted(
+        [(_jaccard(problem_set, set(j.get("tags", []))), j) for j in library],
+        key=lambda x: (-x[0], x[1]["short"]),
+    )
+    must_have: list[str] = []
+    if any(t in themes for t in ("autonomy",)):
+        must_have.append("ethics-compliance")
+    if any(t in themes for t in ("ew", "electronic_warfare")):
+        must_have.append("red-team-adversary")
+    if any(t in themes for t in ("c2", "decision_support")):
+        must_have.append("operator-ux")
+    if "software" in tags:
+        must_have.append("scaling-engineer")
+    must_have.append("technical-skeptic")
+
+    panel: list[Judge] = []
+    seen: set[str] = set()
+
+    def _try_add(short: str) -> None:
+        for j in library:
+            if j["short"] == short and short not in seen:
+                panel.append(j); seen.add(short); return
+
+    for short in must_have:
+        _try_add(short)
+        if len(panel) >= panel_size:
+            break
+
+    for _, j in scored:
+        if j["short"] in seen:
+            continue
+        if len(panel) >= panel_size:
+            break
+        panel.append(j); seen.add(j["short"])
+
+    return panel

@@ -27,3 +27,27 @@ def test_load_library_all(tmp_path:Path)->None:
 def test_load_library_skips_bad(tmp_path:Path)->None:
     _write(tmp_path,"a","A",[]);(tmp_path/"bad.yaml").write_text("name:bad\n",encoding="utf-8")
     assert [j["short"] for j in load_judge_library(tmp_path)]==["a"]
+
+
+def test_select_panel_returns_five(tmp_path: Path) -> None:
+    from agent.judges import select_panel
+    _write(tmp_path,"tech","Tech",["all"]);_write(tmp_path,"mil","Mil",["c-uas"])
+    _write(tmp_path,"ew","EW",["ew"]);_write(tmp_path,"ethics","Ethics",["autonomy"])
+    _write(tmp_path,"ux","UX",["c2"])
+    panel = select_panel(tmp_path, themes=["c-uas"], tags=["software"])
+    assert len(panel) == 5
+    assert any(j["short"]=="tech" for j in panel)
+
+def test_select_includes_ethics_for_autonomy(tmp_path:Path)->None:
+    from agent.judges import select_panel
+    for s in [("tech","Tech",["all"]),("ethics","Ethics",["autonomy"]),("ux","UX",["c2"]),("red","Red",["c-uas"]),("end","End",["c-uas"])]:
+        _write(tmp_path,*s)
+    panel=select_panel(tmp_path,themes=["autonomy"],tags=[])
+    assert any(j["short"]=="ethics" for j in panel) and any(j["short"]=="tech" for j in panel)
+
+def test_select_includes_red_team_for_ew(tmp_path:Path)->None:
+    from agent.judges import select_panel
+    for s in [("tech","Tech",["all"]),("red","Red",["ew"]),("tran","Tran",["ew"]),("intel","Intel",["ew"]),("acq","Acq",["all"])]:
+        _write(tmp_path,*s)
+    panel=select_panel(tmp_path,themes=["ew"],tags=[])
+    assert any(j["short"]=="red" for j in panel) and any(j["short"]=="tech" for j in panel)
