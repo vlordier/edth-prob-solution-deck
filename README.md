@@ -17,8 +17,7 @@ It reads problem statements from a CSV and walks you through the three things mo
 ---
 
 ```
-/edth-agent dry-run
-/edth-agent run
+/edth-agent
 open artefacts/07_deck.html
 ```
 
@@ -71,9 +70,9 @@ All commands in OpenCode or Claude Code chat:
 
 | Command | Does |
 |---|---|
+| `/edth-agent` | **Default** — resume or start the workflow |
 | `/edth-agent dry-run` | 30s smoke test — full pipeline, zero interaction |
 | `/edth-agent team` | Interview each member — skills, blind spots, roles |
-| `/edth-agent run` | Start or resume the workflow |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |
 | `/edth-agent validate` | Check all artefacts for issues |

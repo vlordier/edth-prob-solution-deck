@@ -65,15 +65,18 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 
 ## Quick start
 
-1. Default CSV: `input/sample-problems.csv`. Drop your real CSV in `input/` and update `agent.config.input_csv` in `00_context.yaml`. Real CSVs are gitignored.
-2. `/edth-agent dry-run` — 30-second smoke test that proves everything works.
-3. `/edth-agent run` — start with Phase 0 onboarding.
+Just type `/edth-agent`. The agent auto-checks your environment, resumes from where you left off, and walks you through the next phase. Or jump straight in:
+
+1. `/edth-agent dry-run` — 30-second smoke test. Proves everything works.
+2. `/edth-agent team` — interview your team before you pick a problem.
+3. `/edth-agent` — same as `/edth-agent run`. Resume or start with Phase 0.
 4. Artefacts under `artefacts/`. State resumable via `artefacts/state.json`.
 
 ## Commands
 
 | Command | Effect |
 |---|---|
+| `/edth-agent` | **Default** — same as `run`. Resume or start the workflow. |
 | `/edth-agent help` | Show this help |
 | `/edth-agent status` | Show current phase, decisions, panel |
 | `/edth-agent run` | Run the next pending phase (interactive pauses in real mode) |
