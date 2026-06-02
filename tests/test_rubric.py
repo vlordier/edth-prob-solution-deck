@@ -5,8 +5,11 @@ from __future__ import annotations
 import pytest
 
 from agent.rubric import (
-    DEFAULT_RUBRIC, RubricAxis,
-    get_axis_weights, normalize_weights, score_to_weighted,
+    DEFAULT_RUBRIC,
+    RubricAxis,
+    get_axis_weights,
+    normalize_weights,
+    score_to_weighted,
 )
 
 

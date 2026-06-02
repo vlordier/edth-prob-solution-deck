@@ -1,12 +1,16 @@
 """Judge library loader."""
+
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Any
+
 import yaml
+
 from agent.judge_schema import Judge, JudgeValidationError, validate_judge
 
 log = logging.getLogger(__name__)
+
 
 def load_judge(judges_dir: Path, short_name: str) -> Judge:
     path = judges_dir / f"{short_name}.yaml"
@@ -15,10 +19,12 @@ def load_judge(judges_dir: Path, short_name: str) -> Judge:
     with path.open("r", encoding="utf-8") as f:
         return validate_judge(yaml.safe_load(f) or {})
 
+
 def list_judges(judges_dir: Path) -> list[str]:
     if not judges_dir.exists():
         return []
-    return sorted(p.stem for p in judges_dir.glob("*.yaml") if p.stem.lower()!="readme")
+    return sorted(p.stem for p in judges_dir.glob("*.yaml") if p.stem.lower() != "readme")
+
 
 def load_judge_library(judges_dir: Path) -> list[Judge]:
     out: list[Judge] = []
@@ -36,7 +42,9 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return len(a & b) / len(a | b)
 
 
-def select_panel(judges_dir: Path, themes: list[str], tags: list[str], *, panel_size: int = 5) -> list[Judge]:
+def select_panel(
+    judges_dir: Path, themes: list[str], tags: list[str], *, panel_size: int = 5
+) -> list[Judge]:
     """Auto-select a panel of judges for a given problem using Jaccard similarity + hard rules."""
     library = load_judge_library(judges_dir)
     if not library:
@@ -63,7 +71,9 @@ def select_panel(judges_dir: Path, themes: list[str], tags: list[str], *, panel_
     def _try_add(short: str) -> None:
         for j in library:
             if j["short"] == short and short not in seen:
-                panel.append(j); seen.add(short); return
+                panel.append(j)
+                seen.add(short)
+                return
 
     for short in must_have:
         _try_add(short)
@@ -75,6 +85,7 @@ def select_panel(judges_dir: Path, themes: list[str], tags: list[str], *, panel_
             continue
         if len(panel) >= panel_size:
             break
-        panel.append(j); seen.add(j["short"])
+        panel.append(j)
+        seen.add(j["short"])
 
     return panel

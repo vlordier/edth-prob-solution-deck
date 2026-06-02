@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TypedDict
 
 
-class QualityFlag(str, Enum):
+class QualityFlag(StrEnum):
     VAGUE = "vague"
     MULTI_PROBLEM = "multi_problem"
     REQUIRES_HARDWARE = "requires_hardware"
@@ -14,9 +14,18 @@ class QualityFlag(str, Enum):
 
 
 _HARDWARE_KEYWORDS = (
-    "hull", "radar", "antenna", "stealth material", "energy harvesting",
-    "propulsion", "3d print", "manufacturing", "physical hardware",
-    "mechanical", "towed antenna", "towed",
+    "hull",
+    "radar",
+    "antenna",
+    "stealth material",
+    "energy harvesting",
+    "propulsion",
+    "3d print",
+    "manufacturing",
+    "physical hardware",
+    "mechanical",
+    "towed antenna",
+    "towed",
 )
 
 _VAGUE_LENGTH = 50

@@ -7,13 +7,13 @@ through the 9-phase workflow. See spec §8.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def empty_state() -> dict[str, Any]:
@@ -33,8 +33,7 @@ def empty_state() -> dict[str, Any]:
             "rubric_path": "hackathons/edth.yaml",
         },
         "phases": {
-            str(i): {"status": "pending", "artefact": None, "completed_at": None}
-            for i in range(9)
+            str(i): {"status": "pending", "artefact": None, "completed_at": None} for i in range(9)
         },
         "decisions": {
             "chosen_problem_id": None,
@@ -82,9 +81,7 @@ def get_phase_status(state: dict[str, Any], phase: int) -> str:
     return state["phases"][str(phase)]["status"]
 
 
-def mark_phase_completed(
-    state: dict[str, Any], phase: int, artefact_path: Path
-) -> dict[str, Any]:
+def mark_phase_completed(state: dict[str, Any], phase: int, artefact_path: Path) -> dict[str, Any]:
     """Mark a phase as completed with its artefact path and a timestamp."""
     state["phases"][str(phase)] = {
         "status": "completed",
@@ -152,13 +149,12 @@ def elapsed_minutes(state: dict[str, Any]) -> float | None:
     if not started:
         return None
     started_dt = datetime.fromisoformat(started)
-    return (datetime.now(timezone.utc) - started_dt).total_seconds() / 60.0
+    return (datetime.now(UTC) - started_dt).total_seconds() / 60.0
 
 
 def expected_phases_remaining(state: dict[str, Any]) -> int:
     """Number of phases still pending (not completed)."""
     completed = sum(
-        1 for p in range(9)
-        if state.get("phases", {}).get(str(p), {}).get("status") == "completed"
+        1 for p in range(9) if state.get("phases", {}).get(str(p), {}).get("status") == "completed"
     )
     return max(0, 9 - completed)

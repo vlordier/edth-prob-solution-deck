@@ -12,7 +12,6 @@ import hashlib
 from pathlib import Path
 from typing import TypedDict
 
-
 REQUIRED_COLUMNS = {"Name", "Problem statement"}
 
 
@@ -43,6 +42,7 @@ def _make_id(index: int) -> str:
 def parse_problems_from_string(csv_text: str) -> list[Problem]:
     """Parse CSV content from a string. See parse_problems for details."""
     import io
+
     text = csv_text
     if text.startswith("\ufeff"):
         text = text[1:]
@@ -51,9 +51,7 @@ def parse_problems_from_string(csv_text: str) -> list[Problem]:
         return []
     if not REQUIRED_COLUMNS.issubset(set(reader.fieldnames)):
         missing = REQUIRED_COLUMNS - set(reader.fieldnames)
-        raise ParseError(
-            f"CSV is missing required columns: {sorted(missing)}"
-        )
+        raise ParseError(f"CSV is missing required columns: {sorted(missing)}")
     out: list[Problem] = []
     for row_index, row in enumerate(reader, start=2):
         name = (row.get("Name") or "").strip()

@@ -47,10 +47,11 @@ In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models`
 ```bash
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
 cd edth-prob-solution-deck
-opencode          # or: claude
+bash setup.sh   # auto-detects macOS/Linux/Windows — installs uv, syncs deps, pre-commit hooks
+opencode        # or: claude
 ```
 
-The agent is an Agent Skills-compatible skill — OpenCode and Claude Code both discover it automatically from `.opencode/skills/` and `.claude/skills/`. The first time you invoke `/edth-agent`, it auto-installs uv + Python deps.
+The agent is an Agent Skills-compatible skill — OpenCode and Claude Code both discover it automatically from `.opencode/skills/` and `.claude/skills/`. The first invocation auto-checks that `uv run python -c "import agent"` works.
 
 ## Your own CSV
 
@@ -115,7 +116,8 @@ artefacts/
 - Add your own judge: copy any file in `judges/`, fill in the YAML schema.
 
 ```bash
-uv sync && uv run pytest   # 106 tests
+uv sync --all-groups && uv run pytest   # 116 tests
+uv run ruff check agent/ tests/         # Python lint (0 errors)
 ```
 
 ## Project
@@ -126,8 +128,9 @@ uv sync && uv run pytest   # 106 tests
 | Python glue | `agent/` — parse, normalize, score, render, validate |
 | Judges | `judges/` — 12 YAMLs |
 | Templates | `templates/` — Marp slide skeletons |
-| Sample run | `examples/sample-run/` — pre-generated artefacts + deck |
-| Tests | `tests/` — 106 tests |
+| Setup | `setup.sh` — cross-platform auto-install (macOS/Linux/Windows) |
+| Linting | `.pre-commit-config.yaml` — ruff + markdownlint on commit |
+| Tests | `tests/` — 116 tests |
 
 ---
 

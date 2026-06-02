@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-from agent.rubric import score_to_weighted, DEFAULT_RUBRIC
+from agent.rubric import DEFAULT_RUBRIC, score_to_weighted
 
 
 @dataclass

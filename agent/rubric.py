@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Mapping
+from collections.abc import Mapping
+from enum import StrEnum
 
 
-class RubricAxis(str, Enum):
+class RubricAxis(StrEnum):
     IMPACT = "impact"
     INNOVATION = "innovation"
     EXECUTION = "execution"
@@ -32,9 +32,7 @@ def normalize_weights(weights: Mapping[str, float]) -> dict[str, float]:
     return {k: v / total for k, v in weights.items()}
 
 
-def score_to_weighted(
-    scores: Mapping[str, float], weights: Mapping[str, float]
-) -> float:
+def score_to_weighted(scores: Mapping[str, float], weights: Mapping[str, float]) -> float:
     missing = set(weights.keys()) - set(scores.keys())
     if missing:
         raise KeyError(f"Missing scores for axes: {sorted(missing)}")

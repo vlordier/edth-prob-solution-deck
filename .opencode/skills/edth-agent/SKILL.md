@@ -13,32 +13,46 @@ You are driving the EDTH Hackathon Agent — a structured workflow that turns a 
 
 ## Setup (run once)
 
-**First invocation check:** Before executing ANY command, check if `uv run python -c "import agent"` succeeds. If not:
+**First invocation check:** Before executing ANY command, silently run `uv run python -c "import agent"`. If it fails:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh  # if uv missing
-uv sync
+# Run the cross-platform setup script (macOS, Linux, Windows/WSL):
+bash setup.sh
 ```
 
-Then verify: `uv run python -c "import agent; print('agent ready, v' + agent.__version__)"`
+`setup.sh` auto-detects your OS, installs Python 3.11+ if needed, installs `uv` (via `curl` on macOS/Linux or PowerShell on Windows), syncs all deps, runs `pre-commit install`, and runs tests + linter.
 
-All subsequent Python calls are `uv run python ...` or `uv run python -m agent.X`.
-
-If the user wants PDF output, check for marp and offer to install it:
+**Manual setup** (if you prefer step by step):
 
 ```bash
-npm install -g @marp-team/marp-cli || brew install marp-cli
+# 1. Python 3.11+ from https://python.org
+python3 --version  # must be ≥ 3.11
+
+# 2. Install uv
+# macOS / Linux:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows PowerShell:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# 3. Sync
+uv sync --all-groups
+
+# 4. Pre-commit hooks (optional, auto-lint on commit)
+uv run pre-commit install --install-hooks
 ```
 
-If neither is available, the HTML fallback works fine — mention this and continue.
+Verify: `uv run python -c "import agent; print('agent ready')"`
+
+For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli || brew install marp-cli` (HTML fallback always works without it).
 
 ## Behavior rules
 
 - **First-run check:** Before every command, run `uv run python -c "import agent"` (0.1s). If it fails, stop and run the Setup steps above. Do this silently.
 - **Progress echo:** Announce each substep as you work. Format: `⚙️  Phase N — [phase name]: [substep description]...` (e.g. `⚙️  Phase 1 — Triage: Parsing CSV...`, `⚙️  Phase 1 — Triage: Clustering into 6 groups...`, `✅ Phase 1 — Triage: artefact written.`)
+- **Lint after code changes:** If you create or modify any Python file, run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` before committing or continuing. Report any remaining issues.
 - **Mark in_progress:** Before starting any phase, call `agent.state.mark_phase_in_progress(state, N)` and `agent.state.save_state()`. If the phase fails, call `agent.state.rollback_phase(state, N)`. Never leave a broken phase in `in_progress`.
-- **Validate after every phase:** After writing the artefact, call `agent.validate.run_validation(artefacts_dir, quiet=True)`. If issues found, print them and ask "Fix them before continuing? (y/n)". Do not call validate on the artisan's first run of a phase — only after the artefact exists.
-- **Time tracking:** After each phase completes, compute `agent.state.elapsed_minutes()` and `agent.state.expected_phases_remaining()`. Print: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining (est. {elapsed:.0f}–{elapsed*1.5:.0f} min total)`.
+- **Validate after every phase:** After writing the artefact, call `agent.validate.run_validation(artefacts_dir, quiet=True)`. If issues found, print them and ask "Fix them before continuing? (y/n)".
+- **Time tracking:** After each phase completes, compute `agent.state.elapsed_minutes()` and `agent.state.expected_phases_remaining()`. Print: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
 - **Rerun snapshots:** Before overwriting an artefact on `/edth-agent rerun N`, copy the existing file to `artefacts/snapshots/<filename>.bak.<timestamp>`. Mention: "Previous version saved to `artefacts/snapshots/...`."
 - **Phase 0 (Onboarding) must have a prompt template.** Execute the Phase 0 prompt below verbatim. Do not improvise what to ask.
 - Every other phase has a concrete prompt template below. Execute each verbatim. Do not improvise.
@@ -1152,3 +1166,15 @@ Report results:
 - If all pass: "✅ All {N} checks passed."
 - If issues found: "⚠️ {N} issue(s):" with file-specific messages.
 - Quiet mode: only output if issues found.
+
+---
+
+## Linting & quality
+
+The repo has automated quality checks:
+
+- **Ruff** — fast Python linter + formatter. Run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` to auto-fix.
+- **Markdownlint** — keeps SKILL.md, README, and docs clean. Config in `.markdownlint.yaml`.
+- **Pre-commit hooks** — run `uv run pre-commit install --install-hooks` once. After that, ruff + markdownlint + end-of-file-fixer + trailing-whitespace run automatically on every `git commit`.
+
+When you create or modify Python code, the agent automatically runs ruff before continuing. If ruff finds unfixable issues, it will report them.

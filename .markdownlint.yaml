@@ -1,0 +1,15 @@
+# Disabled rules that don't fit our style
+default: true
+
+MD013: false          # line-length — Marp slides need wide content
+MD024: false          # duplicate headings — OK across diff phases
+MD033: false          # inline HTML — needed for Marp `<style>` and `<div>`
+MD041: false          # first line H1 — frontmatter is first
+MD046: false          # code block style — we use both indented and fenced
+MD052: false          # reference links — we mix styles
+
+# Relaxed rules
+MD029:
+  style: ordered       # ol-prefix — enforce ordered list numbering
+MD035:
+  style: ---           # hr-style — consistent horizontal rules

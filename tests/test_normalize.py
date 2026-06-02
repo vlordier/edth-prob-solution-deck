@@ -11,8 +11,11 @@ from agent.normalize import (
 
 def _p(id: str, name: str, problem: str, source_hash: str = "") -> dict:
     return {
-        "id": id, "name": name, "problem": problem,
-        "source_row": 1, "source_hash": source_hash or f"hash-{id}",
+        "id": id,
+        "name": name,
+        "problem": problem,
+        "source_row": 1,
+        "source_hash": source_hash or f"hash-{id}",
     }
 
 
@@ -27,7 +30,11 @@ def test_short_problem_under_50_chars_gets_vague() -> None:
 
 
 def test_problem_mentioning_hardware_gets_flag() -> None:
-    p = _p("P-001", "Stealth Materials", "Develop stealth materials for UUVs that avoid detection by conventional underwater reconnaissance systems, including sonars and submarines.")
+    p = _p(
+        "P-001",
+        "Stealth Materials",
+        "Develop stealth materials for UUVs that avoid detection by conventional underwater reconnaissance systems, including sonars and submarines.",
+    )
     assert QualityFlag.REQUIRES_HARDWARE in assign_quality_flags(p)
 
 
@@ -37,12 +44,20 @@ def test_problem_mentioning_radar_gets_flag() -> None:
 
 
 def test_problem_with_two_topics_gets_multi_problem() -> None:
-    p = _p("P-001", "Optical detection combining Optical and Acoustic", "Sensor fusion and Acoustic and Visual recognition.")
+    p = _p(
+        "P-001",
+        "Optical detection combining Optical and Acoustic",
+        "Sensor fusion and Acoustic and Visual recognition.",
+    )
     assert QualityFlag.MULTI_PROBLEM in assign_quality_flags(p)
 
 
 def test_clean_software_problem_has_no_flags() -> None:
-    p = _p("P-001", "Autonomy 1", "AI Decision Support Systems. Challenge: Multi-Domain Battle Management Interface. Create an intuitive commander's dashboard. Process simulated feeds from air, land, and naval assets. Prioritize threats. Generate COA recommendations within 3 seconds.")
+    p = _p(
+        "P-001",
+        "Autonomy 1",
+        "AI Decision Support Systems. Challenge: Multi-Domain Battle Management Interface. Create an intuitive commander's dashboard. Process simulated feeds from air, land, and naval assets. Prioritize threats. Generate COA recommendations within 3 seconds.",
+    )
     flags = assign_quality_flags(p)
     assert QualityFlag.VAGUE not in flags
     assert QualityFlag.REQUIRES_HARDWARE not in flags

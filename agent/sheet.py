@@ -9,7 +9,7 @@ See SKILL.md "Question sheet" section.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -82,7 +82,7 @@ def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
         lines.append("### ❌ Avoid These")
         lines.append("")
         for bq in cluster.bad_questions:
-            lines.append(f"- *\"{bq.text}\"* — {bq.why_bad}")
+            lines.append(f'- *"{bq.text}"* — {bq.why_bad}')
         lines.append("")
 
         lines.append("---")
@@ -95,7 +95,9 @@ def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
     for signal_type, desc in sheet.answer_scoring.items():
         lines.append(f"| {signal_type} | {desc} | |")
     lines.append("")
-    lines.append("**After the interview:** score each cluster 1-5 on purchase intent signal. No signal = no problem.")
+    lines.append(
+        "**After the interview:** score each cluster 1-5 on purchase intent signal. No signal = no problem."
+    )
     lines.append("")
 
     path = artefacts_dir / "question_sheet.md"

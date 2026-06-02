@@ -14,9 +14,43 @@ dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
 ]
+lint = [
+    "ruff>=0.8",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "E701",   # multiple statements on one line (colon) — compact test/agent style, intentional
+    "E702",   # multiple statements on one line (semicolon) — compact test/agent style, intentional
+    "B008",   # do not perform function calls in argument defaults
+    "RUF001", # ambiguous unicode — emoji in strings is intentional
+]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

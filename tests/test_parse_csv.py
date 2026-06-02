@@ -49,7 +49,7 @@ def test_source_hash_is_stable_across_runs(tmp_path: Path) -> None:
 def test_handles_multiline_cells_with_quotes(tmp_path: Path) -> None:
     csv_path = tmp_path / "in.csv"
     csv_path.write_text(
-        'Name,Problem statement\n'
+        "Name,Problem statement\n"
         'Autonomy 1,"AI Decision Support Systems\n\nChallenge: Multi-Domain"\n',
         encoding="utf-8",
     )
@@ -60,7 +60,7 @@ def test_handles_multiline_cells_with_quotes(tmp_path: Path) -> None:
 
 def test_handles_utf8_bom(tmp_path: Path) -> None:
     csv_path = tmp_path / "in.csv"
-    csv_path.write_bytes("\ufeffName,Problem statement\nFoo,bar\n".encode("utf-8"))
+    csv_path.write_bytes("\ufeffName,Problem statement\nFoo,bar\n".encode())
     problems = parse_problems(csv_path)
     assert problems[0]["name"] == "Foo"
 

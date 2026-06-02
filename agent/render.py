@@ -1,25 +1,39 @@
 """Render module — Marp, pptx, and HTML deck rendering with fallback tiers."""
+
 from __future__ import annotations
-import logging, shutil
+
+import logging
+import shutil
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+
 
 def detect_marp() -> Path | None:
     path = shutil.which("marp")
     return Path(path) if path else None
 
+
 def has_marp() -> bool:
     return detect_marp() is not None
 
+
 def has_pptx() -> bool:
-    try: import pptx; return True  # noqa: F401
-    except ImportError: return False
+    try:
+        import pptx  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
 
 def best_renderer() -> str:
-    if has_marp(): return "marp"
-    if has_pptx(): return "pptx"
+    if has_marp():
+        return "marp"
+    if has_pptx():
+        return "pptx"
     return "html"
+
 
 _HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -65,31 +79,50 @@ show(0);
 </body>
 </html>"""
 
+
 def _md_slides_to_html(md_text: str) -> list[str]:
-    slides: list[str] = []; current: list[str] = []
+    slides: list[str] = []
+    current: list[str] = []
     for line in md_text.split("\n"):
         st = line.strip()
         if st == "---":
-            slides.append("\n".join(current)); current = []; continue
-        if st.startswith("#### "): current.append(f"<h4>{st[5:]}</h4>")
-        elif st.startswith("### "): current.append(f"<h3>{st[4:]}</h3>")
-        elif st.startswith("## "): current.append(f"<h2>{st[3:]}</h2>")
-        elif st.startswith("# "): current.append(f"<h1>{st[2:]}</h1>")
-        elif st.startswith("- "): current.append(f"<li>{st[2:]}</li>")
-        elif st.startswith(">"): current.append(f"<blockquote>{st[1:]}</blockquote>")
-        elif st.startswith("<!--") or st.startswith("---"): continue
-        else: current.append(f"<p>{line}</p>")
-    if current: slides.append("\n".join(current))
+            slides.append("\n".join(current))
+            current = []
+            continue
+        if st.startswith("#### "):
+            current.append(f"<h4>{st[5:]}</h4>")
+        elif st.startswith("### "):
+            current.append(f"<h3>{st[4:]}</h3>")
+        elif st.startswith("## "):
+            current.append(f"<h2>{st[3:]}</h2>")
+        elif st.startswith("# "):
+            current.append(f"<h1>{st[2:]}</h1>")
+        elif st.startswith("- "):
+            current.append(f"<li>{st[2:]}</li>")
+        elif st.startswith(">"):
+            current.append(f"<blockquote>{st[1:]}</blockquote>")
+        elif st.startswith("<!--") or st.startswith("---"):
+            continue
+        else:
+            current.append(f"<p>{line}</p>")
+    if current:
+        slides.append("\n".join(current))
     return slides
 
-def render_html_deck(artefacts_dir: Path, md_text: str, output_filename: str = "07_deck.html") -> Path:
+
+def render_html_deck(
+    artefacts_dir: Path, md_text: str, output_filename: str = "07_deck.html"
+) -> Path:
     artefacts_dir.mkdir(parents=True, exist_ok=True)
     slide_bodies = _md_slides_to_html(md_text)
     slide_divs = "\n".join(f'<div class="slide">\n{body}\n</div>' for body in slide_bodies)
     title = "Deck"
     for line in md_text.split("\n"):
-        if line.startswith("# "): title = line[2:].strip(); break
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
     html = _HTML_TEMPLATE.format(title=title, slides=slide_divs, total=len(slide_bodies))
-    path = artefacts_dir / output_filename; path.write_text(html, encoding="utf-8")
+    path = artefacts_dir / output_filename
+    path.write_text(html, encoding="utf-8")
     log.info("Rendered %d slides to %s", len(slide_bodies), path)
     return path

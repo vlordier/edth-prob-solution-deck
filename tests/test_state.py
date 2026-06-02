@@ -102,6 +102,7 @@ def test_lock_panel_records_judges() -> None:
 def test_set_config_unknown_key_raises_key_error() -> None:
     state = empty_state()
     import pytest
+
     with pytest.raises(KeyError, match="nope"):
         set_config(state, nope="value")
 
@@ -109,6 +110,7 @@ def test_set_config_unknown_key_raises_key_error() -> None:
 def test_set_decision_unknown_key_raises_key_error() -> None:
     state = empty_state()
     import pytest
+
     with pytest.raises(KeyError, match="nope"):
         set_decision(state, "nope", "value")
 
@@ -122,6 +124,7 @@ def test_mark_phase_completed_guards_against_phase_9() -> None:
 
 def test_mark_phase_in_progress() -> None:
     from agent.state import mark_phase_in_progress
+
     state = empty_state()
     out = mark_phase_in_progress(state, 3)
     assert out["phases"]["3"]["status"] == "in_progress"
@@ -130,6 +133,7 @@ def test_mark_phase_in_progress() -> None:
 
 def test_rollback_phase() -> None:
     from agent.state import mark_phase_in_progress, rollback_phase
+
     state = empty_state()
     mark_phase_in_progress(state, 3)
     out = rollback_phase(state, 3)
@@ -138,6 +142,7 @@ def test_rollback_phase() -> None:
 
 def test_expected_phases_remaining() -> None:
     from agent.state import expected_phases_remaining
+
     state = empty_state()
     assert expected_phases_remaining(state) == 9
     state["phases"]["0"]["status"] = "completed"

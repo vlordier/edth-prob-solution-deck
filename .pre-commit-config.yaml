@@ -1,0 +1,35 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Ruff — fast Python linter & formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.8
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Markdown lint — keeps SKILL.md, README, docs clean
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.19.0
+    hooks:
+      - id: markdownlint-cli2
+        args:
+          - --config
+          - .markdownlint.yaml
+
+  # Prevent committing real input CSVs or large artefacts
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: '\.html$|\.pdf$|\.png$|\.csv$'
+      - id: trailing-whitespace
+        exclude: '\.html$|\.pdf$|\.png$|\.csv$'

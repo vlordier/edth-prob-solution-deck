@@ -50,16 +50,13 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
                             f"artefact missing: {artefact}"
                         )
                     elif check_path.stat().st_size == 0:
-                        issues.append(
-                            f"state.json: phase {p} artefact is empty: {artefact}"
-                        )
+                        issues.append(f"state.json: phase {p} artefact is empty: {artefact}")
 
         if state.get("panel", {}).get("locked"):
             panel_size = len(state["panel"].get("auto_selected", []))
             if panel_size < 2 or panel_size > 12:
                 issues.append(
-                    f"state.json: locked panel has {panel_size} judges "
-                    f"(expected 3-5, max 12)"
+                    f"state.json: locked panel has {panel_size} judges (expected 3-5, max 12)"
                 )
 
         for dkey, dval in state.get("decisions", {}).items():
@@ -71,9 +68,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "01_triage.md")
         cluster_count = text.count("## Cluster ")
         if cluster_count < 2:
-            issues.append(
-                f"01_triage.md: only {cluster_count} clusters found (expected ≥2)"
-            )
+            issues.append(f"01_triage.md: only {cluster_count} clusters found (expected ≥2)")
         if "weighted total" not in text:
             issues.append("01_triage.md: no weighted score found")
         if "Market signal" not in text:
@@ -84,9 +79,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "02_candidate_problem.md")
         cand_count = text.count("## Candidate ")
         if cand_count < 2:
-            issues.append(
-                f"02_candidate_problem.md: only {cand_count} candidates (expected ≥2)"
-            )
+            issues.append(f"02_candidate_problem.md: only {cand_count} candidates (expected ≥2)")
         if "Weighted score" not in text:
             issues.append("02_candidate_problem.md: no weighted score found")
 
@@ -94,9 +87,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "02_owner_questions.md")
         q_count = text.count("## Q-")
         if q_count < 3:
-            issues.append(
-                f"02_owner_questions.md: only {q_count} questions (expected ≥4)"
-            )
+            issues.append(f"02_owner_questions.md: only {q_count} questions (expected ≥4)")
 
     if (artefacts_dir / "02_owner_answers.md").exists():
         text = _slurp(artefacts_dir, "02_owner_answers.md")
@@ -108,9 +99,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "03_chosen_sub_problem.md")
         sp_count = text.count("## SP-")
         if sp_count < 3:
-            issues.append(
-                f"03_chosen_sub_problem.md: only {sp_count} sub-problems (expected ≥3)"
-            )
+            issues.append(f"03_chosen_sub_problem.md: only {sp_count} sub-problems (expected ≥3)")
         if "ROI score" not in text:
             issues.append("03_chosen_sub_problem.md: no ROI scores found")
 
@@ -119,9 +108,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "04_solution_candidates.md")
         idea_count = text.count("## ")
         if idea_count < 5:
-            issues.append(
-                f"04_solution_candidates.md: only {idea_count} ideas (expected ≥5)"
-            )
+            issues.append(f"04_solution_candidates.md: only {idea_count} ideas (expected ≥5)")
         if "rating" not in text.lower() and "Rating" not in text:
             issues.append("04_solution_candidates.md: no ratings found")
 
@@ -145,9 +132,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "06_demo_plan.md")
         beat_count = text.count("**[")
         if beat_count < 5:
-            issues.append(
-                f"06_demo_plan.md: only {beat_count} timed beats (expected ≥5)"
-            )
+            issues.append(f"06_demo_plan.md: only {beat_count} timed beats (expected ≥5)")
         if "Risk Register" not in text and "risk" not in text.lower():
             issues.append("06_demo_plan.md: no risk register found")
 
@@ -171,9 +156,7 @@ def run_validation(artefacts_dir: Path, quiet: bool = False) -> tuple[bool, list
         text = _slurp(artefacts_dir, "07_deck.md")
         slide_count = text.count("\n---\n") + 1
         if slide_count < 3:
-            issues.append(
-                f"07_deck.md: only {slide_count} slides (expected ≥3)"
-            )
+            issues.append(f"07_deck.md: only {slide_count} slides (expected ≥3)")
         if "---" not in text:
             issues.append("07_deck.md: no slide separators found")
 
@@ -212,11 +195,19 @@ def _count_checks(artefacts_dir: Path) -> int:
     """Rough count of checks for display."""
     count = 4  # state.json checks
     for fname in [
-        "01_triage.md", "02_candidate_problem.md", "02_owner_questions.md",
-        "02_owner_answers.md", "03_chosen_sub_problem.md",
-        "04_solution_candidates.md", "05_ranked_solutions.md",
-        "05_owner_pick.md", "06_demo_plan.md", "07_market.md",
-        "07_competition.md", "07_business_model.md", "07_deck.md",
+        "01_triage.md",
+        "02_candidate_problem.md",
+        "02_owner_questions.md",
+        "02_owner_answers.md",
+        "03_chosen_sub_problem.md",
+        "04_solution_candidates.md",
+        "05_ranked_solutions.md",
+        "05_owner_pick.md",
+        "06_demo_plan.md",
+        "07_market.md",
+        "07_competition.md",
+        "07_business_model.md",
+        "07_deck.md",
         "08_summary.md",
     ]:
         if (artefacts_dir / fname).exists():
@@ -226,6 +217,7 @@ def _count_checks(artefacts_dir: Path) -> int:
 
 def _load_json_safe(path: Path) -> dict[str, Any]:
     import json
+
     if not path.exists():
         return {}
     try:

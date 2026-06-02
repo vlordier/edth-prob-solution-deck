@@ -8,7 +8,7 @@ See SKILL.md Phase 6 — Task assignment section.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -55,7 +55,7 @@ def write_demo_tasks(artefacts_dir: Path, plan: DemoTaskPlan) -> Path:
         lines.append(f"**Estimated:** {task.estimated_hours}")
         lines.append("")
         if task.gap_flag:
-            lines.append(f"**⚠️ GAP — nobody on the team is well-suited**")
+            lines.append("**⚠️ GAP — nobody on the team is well-suited**")
             lines.append("")
         lines.append(f"**Assigned to:** {task.assigned_to}")
         if task.fit_reasoning:
