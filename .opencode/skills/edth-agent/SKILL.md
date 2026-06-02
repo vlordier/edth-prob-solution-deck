@@ -47,20 +47,21 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 
 ## Behavior rules
 
-- **Shell safety:** Never pass unsanitized user input directly into shell commands. Always quote file paths with single quotes: `uv run python -c '...'` and `open 'artefacts/07_deck.html'`. Use `shlex.quote()` in Python code where applicable.
-- **First-run check:** Before every command, silently run `uv run python -c "import agent"`. If it fails, tell the user to run `bash setup.sh` and stop. Do not proceed.
-- **Pre-flight check:** Before starting any phase, call `agent.validate.preflight_check(artefacts_dir, phase)`. If issues found, print them and STOP. Do not run the phase missing its input artefacts.
-- **Post-write verification:** After every `write_x()` call, verify the file exists AND `file.stat().st_size > 0`. If either fails, do NOT mark the phase complete. Print "Artefact write failed: file is missing or empty." and abort the phase.
-- **Progress echo:** Announce each substep as you work. Format: `⚙️ Phase N — [phase name]: [substep description]...` (e.g. `⚙️ Phase 1 — Triage: Parsing CSV...`, `⚙️ Phase 1 — Triage: Clustering into 6 groups...`, `✅ Phase 1 — Triage: artefact written.`)
-- **Lint after code changes:** If you create or modify any Python file, run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` before committing or continuing. Report any remaining issues.
-- **Mark in_progress:** Before starting any phase, call `agent.state.mark_phase_in_progress(state, N)` and `agent.state.save_state()`. If the phase fails, call `agent.state.rollback_phase(state, N)`. Never leave a broken phase in `in_progress`.
-- **Validate after every phase:** After writing the artefact, call `agent.validate.run_validation(artefacts_dir, quiet=True)`. If issues found, print them and ask "Fix them before continuing? (y/n)".
-- **Time tracking:** After each phase completes, compute `agent.state.elapsed_minutes()` and `agent.state.expected_phases_remaining()`. Print: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
-- **Rerun snapshots:** Before overwriting an artefact on `/edth-agent rerun N`, copy the existing file to `artefacts/snapshots/<filename>.bak.<timestamp>`. Mention: "Previous version saved to `artefacts/snapshots/...`."
-- **Phase 0 (Onboarding) must have a prompt template.** Execute the Phase 0 prompt below verbatim. Do not improvise what to ask.
-- Every other phase has a concrete prompt template below. Execute each verbatim. Do not improvise.
-- In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact and validation passes. In `owner_mode: sim`, auto-continue.
-- Every phase writes an audit entry via `agent.audit.write_audit_entry()`.
+- **Idempotency:** Before running any phase, check `agent.state.get_phase_status(state, N)`. If `"completed"`, print `✅ Phase {N} already completed — skipping.` and advance to the next pending phase. Only re-run completed phases on explicit `/edth-agent rerun N`. If `"in_progress"`, print `⚠️  Phase {N} was interrupted. Rolling back...`, call `rollback_phase(state, N)`, then proceed.
+- **Environment doctor:** On `/edth-agent run` (not dry-run, not team, not sheet), run `agent.doctor.run_doctor()` before any phase work. Print any issues and ask "Continue anyway? (y/n)". Verifies: Python version, agent imports, deps, CSV presence, artefacts writability, judge library, persona default.
+- **Shell safety:** Never pass unsanitized user input into shell. Quote all paths: `open 'artefacts/07_deck.html'`.
+- **First-run check:** Before every command, silently run `uv run python -c "import agent"`. If it fails, print "Run `bash setup.sh` first." and stop.
+- **Pre-flight check:** Before starting any phase, call `agent.validate.preflight_check(artefacts_dir, phase)`. If issues found, STOP.
+- **Post-write verification:** After every `write_x()`, verify file exists AND `st_size > 0`. If not, print "Artefact write failed" and abort.
+- **Progress echo:** `⚙️  Phase N — Name: substep...`
+- **Lint after code:** `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/`
+- **Mark in_progress:** Before phase work, `mark_phase_in_progress(state, N)`. On failure, `rollback_phase(state, N)`.
+- **Validate after phase:** `agent.validate.run_validation(artefacts_dir, quiet=True)`. Fix issues before continuing.
+- **Time tracking:** `⏱  {elapsed:.0f} min, {remaining} phases remaining.`
+- **Rerun snapshots:** Copy old artefact to `artefacts/snapshots/<file>.bak.<timestamp>` before overwriting.
+- **Phase 0 prompt template.** Execute verbatim. Every other phase has a prompt template — execute each verbatim.
+- In `owner_mode: real`, ask "Approve? (y/edit/redo)". In `owner_mode: sim`, auto-continue.
+- Every phase writes audit via `agent.audit.write_audit_entry()`.
 
 ## Quick start
 
