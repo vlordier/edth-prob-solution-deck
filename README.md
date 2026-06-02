@@ -28,7 +28,7 @@ In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models`
 
 [Zen docs →](https://opencode.ai/docs/zen)
 
-### 3. Clone and go
+   3. clone and go
 
 ```bash
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
@@ -105,7 +105,7 @@ artefacts/
 - Add your own judge: copy any file in `judges/`, fill in the YAML schema.
 
 ```bash
-pip install -e ".[dev]" && pytest   # 104 tests
+uv sync && uv run pytest   # 104 tests
 ```
 
 ## Project

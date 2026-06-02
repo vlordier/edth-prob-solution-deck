@@ -4,10 +4,25 @@ You are driving the EDTH Hackathon Agent — a structured workflow that turns a 
 
 ## Setup (run once)
 
-Before executing any phase, verify the Python environment is ready. If `.venv` is missing or `pytest` fails to import, run:
+Before executing any phase, verify the Python environment is ready. If `uv` is not found, install it:
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then install deps and run `edth-agent` commands:
+
+```bash
+uv sync
+uv run pytest
+```
+
+All subsequent `python` and `python -m agent.X` calls should be prefixed with `uv run`:
+
+```bash
+uv run python -c "from agent.state import empty_state; ..."
+uv run python -m agent.parse_csv
+uv run pytest
 ```
 
 If the user wants PDF output, check for marp and offer to install it:

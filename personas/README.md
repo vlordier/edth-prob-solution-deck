@@ -9,4 +9,4 @@ Personas define the problem-owner perspective for hackathon evaluations. Each `.
 ## Adding a Persona
 
 1. Create `personas/<short-name>.yaml` using `edth-judge.yaml` as a template.
-2. Run tests to verify: `.venv/bin/pytest tests/test_personas.py -v`
+2. Run tests to verify: `uv run pytest tests/test_personas.py -v`

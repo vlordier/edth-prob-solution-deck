@@ -184,8 +184,7 @@ Once you've ranked your solution, the agent produces the rest:
 
 ```bash
 git clone <repo> && cd edth-prob-solution-deck
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync
 npm install -g @marp-team/marp-cli   # optional, for PDF
 ```
 
