@@ -54,23 +54,72 @@ def empty_state() -> dict[str, Any]:
 
 
 def load_state(artefacts_dir: Path) -> dict[str, Any]:
-    """Load state.json from artefacts_dir, or return an empty dict if missing."""
+    """Load state.json from artefacts_dir, or return an empty dict if missing.
+
+    Warns on corrupt JSON. Detects concurrent access via mtime check.
+    """
     state_path = artefacts_dir / "state.json"
     if not state_path.exists():
         return {}
-    with state_path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    mtime = state_path.stat().st_mtime
+    try:
+        with state_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        import sys
+
+        print(
+            f"⚠️  state.json is corrupted ({e}). "
+            f"Backup saved to state.json.corrupt. Consider /edth-agent reset.",
+            file=sys.stderr,
+        )
+        # Save the corrupt file as backup so user doesn't lose data
+        corrupt_path = artefacts_dir / "state.json.corrupt"
+        try:
+            state_path.rename(corrupt_path)
+            print(f"   Moved to {corrupt_path}", file=sys.stderr)
+        except OSError:
+            pass
+        return {}
+    except OSError as e:
+        import sys
+
+        print(f"⚠️  Could not read state.json: {e}", file=sys.stderr)
+        return {}
+
+    # Warn if the file was modified while we were reading (concurrent access)
+    if state_path.stat().st_mtime != mtime:
+        import sys
+
+        print(
+            "⚠️  state.json was modified during load — another process may be writing. "
+            "Avoid running two agents on the same repo simultaneously.",
+            file=sys.stderr,
+        )
+
+    return data
 
 
 def save_state(artefacts_dir: Path, state: dict[str, Any]) -> Path:
-    """Save state to artefacts_dir/state.json. Creates the dir if missing."""
+    """Save state to artefacts_dir/state.json. Creates the dir if missing.
+
+    Uses atomic write (write to temp file, then rename) to prevent
+    corruption from partial writes.
+    """
     artefacts_dir.mkdir(parents=True, exist_ok=True)
     state["updated_at"] = _now_iso()
     if state.get("started_at") is None:
         state["started_at"] = state["updated_at"]
     state_path = artefacts_dir / "state.json"
-    with state_path.open("w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2, sort_keys=True)
+    tmp_path = artefacts_dir / "state.json.tmp"
+    try:
+        with tmp_path.open("w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, sort_keys=True)
+        tmp_path.rename(state_path)
+    except OSError:
+        # Fallback: direct write if rename fails (e.g., cross-filesystem)
+        with state_path.open("w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, sort_keys=True)
     return state_path
 
 

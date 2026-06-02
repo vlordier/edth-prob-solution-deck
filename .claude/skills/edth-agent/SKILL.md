@@ -20,7 +20,7 @@ You are driving the EDTH Hackathon Agent — a structured workflow that turns a 
 bash setup.sh
 ```
 
-`setup.sh` auto-detects your OS, installs Python 3.11+ if needed, installs `uv` (via `curl` on macOS/Linux or PowerShell on Windows), syncs all deps, runs `pre-commit install`, and runs tests + linter.
+`setup.sh` auto-detects your OS, installs Python 3.12+ if needed, installs `uv` (via `curl` on macOS/Linux or PowerShell on Windows), syncs all deps, runs `pre-commit install`, and runs tests + linter.
 
 **Manual setup** (if you prefer step by step):
 
@@ -47,8 +47,11 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 
 ## Behavior rules
 
-- **First-run check:** Before every command, run `uv run python -c "import agent"` (0.1s). If it fails, stop and run the Setup steps above. Do this silently.
-- **Progress echo:** Announce each substep as you work. Format: `⚙️  Phase N — [phase name]: [substep description]...` (e.g. `⚙️  Phase 1 — Triage: Parsing CSV...`, `⚙️  Phase 1 — Triage: Clustering into 6 groups...`, `✅ Phase 1 — Triage: artefact written.`)
+- **Shell safety:** Never pass unsanitized user input directly into shell commands. Always quote file paths with single quotes: `uv run python -c '...'` and `open 'artefacts/07_deck.html'`. Use `shlex.quote()` in Python code where applicable.
+- **First-run check:** Before every command, silently run `uv run python -c "import agent"`. If it fails, tell the user to run `bash setup.sh` and stop. Do not proceed.
+- **Pre-flight check:** Before starting any phase, call `agent.validate.preflight_check(artefacts_dir, phase)`. If issues found, print them and STOP. Do not run the phase missing its input artefacts.
+- **Post-write verification:** After every `write_x()` call, verify the file exists AND `file.stat().st_size > 0`. If either fails, do NOT mark the phase complete. Print "Artefact write failed: file is missing or empty." and abort the phase.
+- **Progress echo:** Announce each substep as you work. Format: `⚙️ Phase N — [phase name]: [substep description]...` (e.g. `⚙️ Phase 1 — Triage: Parsing CSV...`, `⚙️ Phase 1 — Triage: Clustering into 6 groups...`, `✅ Phase 1 — Triage: artefact written.`)
 - **Lint after code changes:** If you create or modify any Python file, run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` before committing or continuing. Report any remaining issues.
 - **Mark in_progress:** Before starting any phase, call `agent.state.mark_phase_in_progress(state, N)` and `agent.state.save_state()`. If the phase fails, call `agent.state.rollback_phase(state, N)`. Never leave a broken phase in `in_progress`.
 - **Validate after every phase:** After writing the artefact, call `agent.validate.run_validation(artefacts_dir, quiet=True)`. If issues found, print them and ask "Fix them before continuing? (y/n)".
@@ -56,7 +59,6 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 - **Rerun snapshots:** Before overwriting an artefact on `/edth-agent rerun N`, copy the existing file to `artefacts/snapshots/<filename>.bak.<timestamp>`. Mention: "Previous version saved to `artefacts/snapshots/...`."
 - **Phase 0 (Onboarding) must have a prompt template.** Execute the Phase 0 prompt below verbatim. Do not improvise what to ask.
 - Every other phase has a concrete prompt template below. Execute each verbatim. Do not improvise.
-- After each phase output, run `/edth-agent validate --quiet` to self-check. Fix issues before continuing.
 - In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact and validation passes. In `owner_mode: sim`, auto-continue.
 - Every phase writes an audit entry via `agent.audit.write_audit_entry()`.
 
@@ -210,19 +212,21 @@ Quality rules:
 ### Implementation steps
 
 1. Print: `⚙️  Phase 1 — Triage: loading state...`
-2. `agent.state.mark_phase_in_progress(state, 1)`. Save state.
-3. `uv run python -m agent.parse_csv` or call `agent.parse_csv.parse_problems()`. Print: `⚙️  Phase 1 — Triage: parsed {N} problems.` Save to `artefacts/01_problems.json`.
-4. `agent.normalize.assign_quality_flags()` on each problem. `agent.normalize.dedupe_problems()`. Print: `⚙️  Phase 1 — Triage: {N} problems after deduplication.`
-5. Print: `⚙️  Phase 1 — Triage: clustering problems...`
-6. Execute the prompt template above verbatim. Do not improvise.
-7. If panel is locked, run panel review: Borda aggregation. Print: `⚙️  Phase 1 — Triage: panel reviewing clusters...`
-8. Build `agent.triage.TriageReport`, write via `agent.triage.write_triage_report()`.
-9. Print: `✅ Phase 1 — Triage: {N} clusters written to artefacts/01_triage.md.`
-10. `agent.mark_phase_completed(state, 1, artefacts_dir / "01_triage.md")`. Save state.
-11. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-12. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
-13. Write audit entry.
-14. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
+2. `agent.validate.preflight_check(artefacts_dir, 1)` — abort if issues.
+3. `agent.state.mark_phase_in_progress(state, 1)`. Save state.
+4. Parse CSV. Print: `⚙️  Phase 1 — Triage: parsing CSV...`
+   Use `agent.parse_csv.parse_problems_safe(csv_path)` to get (result, error). If error, print it and abort with `rollback_phase`. Print: `⚙️  Phase 1 — Triage: parsed {N} problems.` Save to `artefacts/01_problems.json`. Verify file exists and size > 0.
+5. `agent.normalize.assign_quality_flags()` on each problem. `agent.normalize.dedupe_problems()`. Print: `⚙️  Phase 1 — Triage: {N} problems after deduplication.`
+6. Print: `⚙️  Phase 1 — Triage: clustering problems...`
+7. Execute the prompt template above verbatim. Do not improvise.
+8. If panel is locked, run panel review: Borda aggregation. Print: `⚙️  Phase 1 — Triage: panel reviewing clusters...`
+9. Build `agent.triage.TriageReport`, write via `agent.triage.write_triage_report()`. **Post-write: verify file exists and size > 0.**
+10. Print: `✅ Phase 1 — Triage: {N} clusters written to artefacts/01_triage.md.`
+11. `agent.mark_phase_completed(state, 1, artefacts_dir / "01_triage.md")`. Save state.
+12. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+13. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
+14. Write audit entry.
+15. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
 
 ---
 
