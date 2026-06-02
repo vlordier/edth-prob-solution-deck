@@ -415,58 +415,88 @@ Runs after Phase 3 (sub-problem chosen). Not a separate phase — a mandatory
 Execute this prompt verbatim:
 
 ```
-You are mapping the chosen sub-problem to the military kill chain
-and broader European defense tech considerations.
+You are mapping the chosen sub-problem to battlefield reality — kill chain
+position, European defense priorities, and Ukraine's proven lessons.
 
 Read `artefacts/03_chosen_sub_problem.md` for the chosen sub-problem
 and `artefacts/02_candidate_problem.md` for the larger problem context.
 
-Answer these questions in 1-2 sentences each:
+Answer concisely — 1-2 sentences per question. No fluff. This section
+is appended to 03_chosen_sub_problem.md and the team reads it before
+they start building.
 
-1. KILL CHAIN: Which link(s) does this solution sit in — Find / Fix / Track /
-   Target / Engage / Assess? What happens in the link BEFORE yours? If that
-   link fails, does your solution still matter?
+PART A — THE BATTLEFIELD CONTEXT
 
-2. ATTRITION / SUSTAIN: Ukraine burns through equipment at shocking rates.
-   Can this be produced at scale? At what unit cost? How long does one unit
-   last in the field before it's destroyed, jammed, or worn out?
+RESEARCH FIRST: Run 2-3 web searches to ground your answers in the
+latest data. Search for: "[problem domain] Ukraine priorities 2025 2026"
+and "EU defence [problem domain] capability gap 2026". Use specific
+facts from search results — budgets, production numbers, operational
+gaps cited by commanders. Cite sources.
 
-3. INTEROPERABILITY: European armies use different radios, different
-   standards, different languages. Does this integrate with NATO STANAGs?
-   With what's currently deployed in Ukraine (SDR, Starlink, DJI, etc.)?
-   Or does it require its own ecosystem?
+A1. KILL CHAIN: Find → Fix → Track → Target → Engage → Assess.
+    Which link does this solution sit in? What happens in the link
+    BEFORE — if that link fails, does yours still matter?
 
-4. LOGISTICS: How does this get to the front? Does it need Starlink? A
-   generator? A vehicle trailer? Can a territorial defense volunteer carry
-   it? What's the power source — batteries, diesel, solar?
+A2. UKRAINE PRIORITIES (2026): Ukraine's MoD states top 3 priorities
+    are air/missile defense, Ukrainian-made UAVs, and extended-range
+    munitions (~80% of security assistance). Does this problem directly
+    serve one of these? If no, is it an enabler (EW, comms, logistics)
+    that makes those priorities possible?
 
-5. FABRICATION / SUPPLY CHAIN: Can European industry produce this? Are we
-   dependent on Chinese semiconductors, American ITAR-controlled components,
-   or single-source suppliers? What's the lead time from order to delivery?
+A3. EUROPEAN DEFENSE FLAGSHIPS: The EU Readiness Roadmap 2030 defines
+    four flagships — European Drone Defence, Eastern Flank Watch,
+    European Air Shield, European Space Shield. Does this solution
+    fit into any of these? Which one? (Cite the specific flagship.)
 
-6. TRAINING BURDEN: Can a conscript or a territorial defense volunteer
-   operate this with 4 hours of training? Or does it need a specialist
-   with 6 months of school?
+A4. DRONE WAR REALITY: Ukraine produces 7M+ drones/year. FPVs cost
+    $500-$2K. Fiber-optic drones bypass EW. Computer-vision drones
+    bypass jamming. The trend is toward AI-enabled, GPS-denied,
+    swarming systems. Where does this solution sit in that evolution?
 
-7. COUNTER-COUNTERMEASURE: The adversary adapts in weeks, not years. Is
-   this software-upgradable in the field? Can frequency bands, models,
-   or tactics be updated without returning to depot?
+PART B — EUROPEAN SOVEREIGNTY & SCALE
 
-8. DUAL-USE / IHL: What's the civilian risk? Does this comply with the
-   principles of distinction and proportionality? Is there a human in the
-   loop? Could this be repurposed for civilian harm?
+B1. ATTRITION MATH: Shoot down a $35K Shahed with a $3.7M missile =
+    Russia wins by economics. What's the cost-exchange ratio of this
+    solution vs the threat it counters? Is it sustainable at scale?
 
-9. COST PER EFFECT: What's the cost-exchange ratio? If the adversary's
-   threat costs $500 and your countermeasure costs $50,000, the adversary
-   wins by attrition. If yours costs $500, you win.
+B2. PRODUCTION SCALE: Europe produces <100K small drones/year. Ukraine
+    produces millions. Can European industry mass-produce this? What
+    are the bottlenecks — chips? rare earths? ITAR components? single-
+    source suppliers?
 
-10. SOVEREIGNTY: Is this European-made or dependent on a non-EU supplier?
-    Can it be exported without ITAR? If the US changes policy tomorrow,
-    does your supply chain survive?
+B3. INTEROPERABILITY: Does this integrate with NATO STANAGs, Ukrainian
+    systems (Delta, Kropyva), Starlink, SDR radios? Or does it require
+    its own ecosystem?
 
-Append this as a new section `## Kill Chain & European Defense Context`
+B4. SOVEREIGNTY: Is this European-made or dependent on non-EU supply?
+    If the US changes policy tomorrow (ITAR, export controls, political
+    shift), does your supply chain survive?
+
+PART C — FIELD REALITY
+
+C1. TRAINING: Can a conscript or territorial defense volunteer
+    operate this with 4 hours of training? Or does it need a
+    specialist with 6 months of school?
+
+C2. LOGISTICS: Power source? Generator? Vehicle trailer? Battery
+    weight? Can two soldiers carry it? Does it need Starlink?
+
+C3. COUNTER-COUNTERMEASURE: Russia adapts EW in weeks (fiber-optic
+    drones emerged to counter jamming in <6 months). Is this solution
+    field-upgradable? Can models, frequencies, or tactics be changed
+    without returning to depot?
+
+C4. COST PER EFFECT: If the threat costs $X and your countermeasure
+    costs $Y, at what ratio does the adversary win by attrition?
+    Give numbers.
+
+C5. DUAL-USE / IHL: Civilian risk? Distinction/proportionality?
+    Human in the loop? Could this be repurposed for civilian harm?
+
+Append all answers as a new section
+`## Kill Chain & European Defense Context`
 to the bottom of `artefacts/03_chosen_sub_problem.md`.
-Do NOT overwrite the file — append to it.
+Do NOT overwrite — append. Section must be under 2,500 words total.
 ```
 
 ### Implementation steps
