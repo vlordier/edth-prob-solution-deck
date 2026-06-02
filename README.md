@@ -20,31 +20,29 @@ curl -fsSL https://opencode.ai/install | bash
 
 ### 2. Choose a free model
 
-OpenCode Zen gives you free access to coding-optimized models. Sign up at [opencode.ai/auth](https://opencode.ai/auth), add a payment method (required for signup, but free models cost nothing), and copy your API key.
+Sign up at [opencode.ai/auth](https://opencode.ai/auth), add a payment method (required but unused for free models), and copy your API key.
 
-Free models available right now: **DeepSeek V4 Flash**, **MiMo-V2.5**, **Nemotron 3 Super**, and **Big Pickle** (stealth model).
+Free models available: **DeepSeek V4 Flash**, **MiMo-V2.5**, **Nemotron 3 Super**, **Big Pickle**.
 
-In the OpenCode terminal, run `/connect`, select **opencode**, and paste your key. Then pick a model with `/models`.
+In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models` to pick one.
 
 [Zen docs →](https://opencode.ai/docs/zen)
 
-### 3. Install the agent
+### 3. Clone and go
 
 ```bash
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
 cd edth-prob-solution-deck
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-npm install -g @marp-team/marp-cli   # optional, for PDF output
+opencode
 ```
 
-### 4. Try it
+In the OpenCode chat:
 
 ```
 /edth-agent dry-run
 ```
 
-30 seconds, zero interaction. Open `artefacts/07_deck.html` in your browser.
+The agent sets up Python + deps automatically the first time you run it. 30 seconds later, open `artefacts/07_deck.html` in your browser.
 
 ## Your own CSV
 
@@ -109,6 +107,8 @@ artefacts/
 ```bash
 pip install -e ".[dev]" && pytest   # 104 tests
 ```
+
+## Project
 
 ## Project
 

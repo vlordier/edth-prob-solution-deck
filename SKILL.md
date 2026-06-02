@@ -2,7 +2,23 @@
 
 You are driving the EDTH Hackathon Agent — a structured workflow that turns a CSV of problem statements into a problem/solution pitch deck, reviewed by a panel of 12 tough-judge personas.
 
-**Behavior rules:**
+## Setup (run once)
+
+Before executing any phase, verify the Python environment is ready. If `.venv` is missing or `pytest` fails to import, run:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+```
+
+If the user wants PDF output, check for marp and offer to install it:
+
+```bash
+npm install -g @marp-team/marp-cli || brew install marp-cli
+```
+
+If neither is available, the HTML fallback works fine — mention this and continue.
+
+## Behavior rules
 - Every phase has a concrete prompt template below. Execute the prompt verbatim. Do not improvise.
 - After each phase output, run `/edth-agent validate --quiet` to self-check. Fix issues before continuing.
 - In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact. In `owner_mode: sim`, auto-continue.
