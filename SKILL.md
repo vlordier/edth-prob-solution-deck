@@ -189,36 +189,72 @@ Quality rules:
 Execute this prompt verbatim:
 
 ```
-You are generating owner questions for the top 3 problem clusters from Phase 1.
+You are generating structured owner questions for the top 3 problem clusters
+from Phase 1, following The Mom Test methodology (Rob Fitzpatrick).
+
 Read `artefacts/01_triage.md` to get the clusters and their problem IDs.
 
-Step 1 — Owner questions:
-For each of the top 3 clusters, generate 2-3 questions covering:
-- What hurts most right now? (pain)
-- What have you tried that didn't work? (constraints)
-- Who decides what gets built/bought? (purchasing)
-- What's the budget and timeline? (resources)
-- What defines success? (acceptance criteria)
-- What's the operating environment? (env)
+CRITICAL RULES — The Mom Test:
+- NEVER ask "Would you use X?" or "Do you think X is a problem?" (leading)
+- NEVER ask hypotheticals: "How much would you pay?" (speculation)
+- ALWAYS ask about specific past incidents: "Tell me about the last time..."
+- ALWAYS ask about current behavior: "How do you solve this today?"
+- ALWAYS look for concrete cost: "How many hours/people/dollars does this burn?"
+- ALWAYS probe for failed attempts: "What did you try that didn't work?"
+- If they say "it's a big problem" — ask "how many times did it happen last week?"
+- If they say "we'd buy that" — ask "who signs the PO and what's their email?"
 
-Write these as `agent.elicitation.OwnerQuestion` objects with ids Q-001, Q-002, ...
-Tag each with asker="user".
+Step 1 — Owner questions (3 per cluster, minimum 9 total):
+
+CLUSTER QUESTIONS (3 per cluster):
+  Q-0XX: "Walk me through the last time you dealt with [cluster topic]. What
+         happened, step by step?" (past incident, not opinion)
+  Q-0XX: "How do you solve [cluster topic] today? What tools, people, or
+         workarounds are you using right now?" (current behavior)
+  Q-0XX: "What did you try before your current approach, and why did you
+         abandon it?" (failed attempts)
+
+CROSS-CUTTING QUESTIONS (asked once, tagged with cluster that triggers it):
+  Q-0XX: "In the past month, how many times did a mission or operation get
+         delayed or compromised because [cluster topic] wasn't solved? What was
+         the worst incident?" (concrete frequency + cost)
+  Q-0XX: "Who specifically is the person accountable for fixing this? What's
+         their title and what happens to them if it's not fixed in 6 months?"
+         (purchasing intent + consequences)
+  Q-0XX: "If you had to show me proof that this is a real problem right now
+         — a screenshot, an email thread, an after-action report — what would
+         you show me?" (evidence of pain)
+  Q-0XX: "Is there anyone else I should talk to who feels this pain more
+         acutely than you?" (referral check — if no one comes to mind,
+         the problem may be shallow)
+
+Tag all with asker="mom-test". These are the structured discovery questions.
 
 Step 2 — Judge questions:
 Load the locked panel from state.json. For each judge, read their
 `hard_questions_seed` field from the YAML and add 2-3 questions adapted
 to the specific clusters. Tag these with asker=<judge_short>.
 
+Important: judges should ALSO follow Mom Test principles — ask about
+past incidents and concrete behavior, not opinions.
+
 Step 3 — Capture answers:
-If owner_mode=real: present questions to the user one by one or in batches.
-Capture answers interactively.
-If owner_mode=sim: load the persona YAML, role-play the owner, generate plausible
-answers for every question. Be specific — no "it depends" without specifics.
+If owner_mode=real: present questions to the user one at a time. For each
+answer, apply the Mom Test sniff test:
+  - Did they describe a concrete past incident? If not, ask for one.
+  - Did they mention a specific cost (hours, people, dollars)? If not, ask.
+  - Did they offer a compliment ("sounds great!")? Redirect to evidence.
+  - Did they say "a lot of people have this problem"? Ask for an intro.
+
+If owner_mode=sim: load the persona YAML, role-play the owner, generate
+specific, past-tense answers for every question. Every answer must reference
+at least one concrete incident, metric, or named person. "It depends" is
+only acceptable when followed by a specific example.
 
 Step 4 — Re-score candidates:
 Re-score the top 3 candidate problems using the rubric axes, now informed by
 the owner answers. For each candidate, write 2-3 sentences of reasoning that
-reference specific answers.
+reference specific answers — quote the answer that most changed your score.
 
 Output: Build `agent.candidates.Candidate` objects and call
 `agent.candidates.write_candidate_problem()`. The weighted score is computed via
