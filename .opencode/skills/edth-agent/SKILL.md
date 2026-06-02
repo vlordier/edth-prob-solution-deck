@@ -1,126 +1,93 @@
 ---
 name: edth-agent
 description: >
-  Turn a CSV of problem statements into a winning pitch deck — problem selection,
-  Mom Test elicitation, 12-judge validation, solution ideation, ranking, and deck
-  generation. Subcommands: team, dry-run, run, validate, panel, sheet, skip-to,
-  render, reset, status, help.
+  Turn a CSV of defense-tech problem statements into a winning pitch deck —
+  problem selection, Mom Test elicitation (operator-adapted), 12-judge validation,
+  solution ideation, ranking, and Marp deck generation. Includes team discovery,
+  kill chain mapping, one-sentence clarity, subagent-based pitch review.
+  Subcommands: team, dry-run, run, validate, panel, sheet, skip-to, judge, review, setup.
+disable-model-invocation: true
+compatibility: opencode claude gemini
+metadata:
+  audience: hackathon
+  workflow: edth
+  domain: defense-tech
+  phases: 9
+  judges: 12
 ---
 
 # EDTH Hackathon Agent
 
 You are driving the EDTH Hackathon Agent — a structured workflow that turns a CSV of problem statements into a problem/solution pitch deck, reviewed by a panel of 12 tough-judge personas.
 
+**This file is the workflow spine.** Prompt templates are in `references/prompts/`.
+The agent reads each prompt template only when executing that phase — keeping context lean.
+
 ## Setup (run once)
 
-**First invocation check:** Before executing ANY command, silently run `uv run python -c "import agent"`. If it fails:
-
+**First invocation:** silently run `uv run python -c "import agent"`. If it fails:
 ```bash
-# Run the cross-platform setup script (macOS, Linux, Windows/WSL):
-bash setup.sh
+bash setup.sh   # cross-platform: macOS / Linux / Windows-WSL
 ```
-
-`setup.sh` auto-detects your OS, installs Python 3.12+ if needed, installs `uv` (via `curl` on macOS/Linux or PowerShell on Windows), syncs all deps, runs `pre-commit install`, and runs tests + linter.
-
-**Manual setup** (if you prefer step by step):
-
-```bash
-# 1. Python 3.12+ from https://python.org
-python3 --version  # must be ≥ 3.12
-
-# 2. Install uv
-# macOS / Linux:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# Windows PowerShell:
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# 3. Sync
-uv sync --all-groups
-
-# 4. Pre-commit hooks (optional, auto-lint on commit)
-uv run pre-commit install --install-hooks
-```
-
 Verify: `uv run python -c "import agent; print('agent ready')"`
 
-For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli || brew install marp-cli` (HTML fallback always works without it).
-
-## MCP tools (Exa + Context7)
-
-The agent ships with two MCP servers for deep research:
-
-- **Exa** — web search. `https://mcp.exa.ai/mcp`. Free, no API key. Use for Phase 1 market signals, Phase 5 web research, Phase 7 market/competition.
-- **Context7** — up-to-date library docs. `https://mcp.context7.com/mcp`. Set `CONTEXT7_API_KEY` for higher rate limits (free signup at context7.com). Use when the agent needs current API docs for any technology referenced in solutions.
-
-**Claude Code:** `.mcp.json` in project root auto-loads both on session start. No manual config needed.
-
-**OpenCode:** `opencode.json` in project root auto-loads both. OpenCode discovers it from the project directory.
-
-### When to use each MCP tool
-
-- **Web search (Exa):** Always preferred for Phase 1 (market signal), Phase 5 (prior art, competitors, TRL), Phase 7 (market sizing, competition). Exa returns clean content, not link lists. Use `web_search_exa` or `web_search_advanced_exa` for time-filtered results.
-- **Doc search (Context7):** When the solution references a specific library or framework (e.g. "React dashboard", "ONNX runtime", "signal processing with SciPy"), use `resolve_library_id` then `query_docs` to get current docs — not the LLM's training data.
-- **Fallback:** If neither MCP is connected, use the LLM's built-in web search tools. The standard tool names are sufficient.
+For PDF output: `npm install -g @marp-team/marp-cli || brew install marp-cli` (HTML fallback always works).
 
 ## Behavior rules
 
-- **Timebox awareness:** After every Phase N (N ≥ 1), assess wall-clock time since `state["started_at"]`. If >6h have passed and current_phase < 3, print: `⏰ 6+ hours elapsed. Force-pick a problem now? (y)`. If >12h and current_phase < 5, print: `⏰ 12+ hours. You need 12h+ to build. Skip to ranking? (y)`. If >24h and current_phase < 7, print: `⏰ 24+ hours. Build time shrinking. Skip to deck? (y)`. Respect the answer.
-- **Idempotency:** Before running any phase, check `agent.state.get_phase_status(state, N)`. If `"completed"`, print `✅ Phase {N} already completed — skipping.` and advance to the next pending phase. Only re-run completed phases on explicit `/edth-agent rerun N`. If `"in_progress"`, print `⚠️  Phase {N} was interrupted. Rolling back...`, call `rollback_phase(state, N)`, then proceed.
-- **Environment doctor:** On `/edth-agent run` (not dry-run, not team, not sheet), run `agent.doctor.run_doctor()` before any phase work. Print any issues and ask "Continue anyway? (y/n)". Verifies: Python version, agent imports, deps, CSV presence, artefacts writability, judge library, persona default.
-- **Shell safety:** Never pass unsanitized user input into shell. Quote all paths: `open 'artefacts/07_deck.html'`.
-- **First-run check:** Before every command, silently run `uv run python -c "import agent"`. If it fails, print "Run `bash setup.sh` first." and stop.
-- **Pre-flight check:** Before starting any phase, call `agent.validate.preflight_check(artefacts_dir, phase)`. If issues found, STOP.
-- **Post-write verification:** After every `write_x()`, verify file exists AND `st_size > 0`. If not, print "Artefact write failed" and abort.
+- **Idempotency:** Check `agent.state.get_phase_status(state, N)`. If `"completed"`, skip and advance. If `"in_progress"`, rollback and re-run.
+- **Timebox:** After each phase check elapsed time. At 6h → force-pick problem. At 12h → skip to ranking. At 24h → skip to deck.
+- **Environment doctor:** On `/edth-agent run`, run `agent.doctor.run_doctor()` first. Print issues, ask "Continue? (y/n)".
+- **First-run check:** Before every command, silently `uv run python -c "import agent"`. If it fails, print "Run `bash setup.sh`" and stop.
+- **Pre-flight:** `agent.validate.preflight_check(artefacts_dir, phase)` before starting any phase. Abort if issues.
+- **Post-write verification:** After every artefact write, verify file exists AND `st_size > 0`. If not, abort.
 - **Progress echo:** `⚙️  Phase N — Name: substep...`
-- **Lint after code:** `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/`
-- **Mark in_progress:** Before phase work, `mark_phase_in_progress(state, N)`. On failure, `rollback_phase(state, N)`.
-- **Validate after phase:** `agent.validate.run_validation(artefacts_dir, quiet=True)`. Fix issues before continuing.
-- **Time tracking:** After each phase: `⏱  {elapsed:.0f} min, {remaining} phases remaining.` Then apply the timebox rule above.
-- **Rerun snapshots:** Copy old artefact to `artefacts/snapshots/<file>.bak.<timestamp>` before overwriting.
-- **Phase 0 prompt template.** Execute verbatim. Every other phase has a prompt template — execute each verbatim.
+- **Lint after code changes:** `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/`
+- **Mark in_progress:** `mark_phase_in_progress(state, N)` → `save_state()` before work. On failure: `rollback_phase(state, N)`.
+- **Validate after each phase:** `agent.validate.run_validation(artefacts_dir, quiet=True)`.
+- **Time tracking:** `⏱  {elapsed:.0f} min, {remaining} phases remaining.`
+- **Rerun snapshots:** Before overwriting, copy to `artefacts/snapshots/<file>.bak.<timestamp>`.
+- **Shell safety:** Always single-quote file paths.
 - In `owner_mode: real`, ask "Approve? (y/edit/redo)". In `owner_mode: sim`, auto-continue.
-- Every phase writes audit via `agent.audit.write_audit_entry()`.
+- Every phase writes `agent.audit.write_audit_entry()`.
 
 ## Quick start
 
-Just type `/edth-agent`. The agent auto-checks your environment, resumes from where you left off, and walks you through the next phase. Or jump straight in:
+```
+/edth-agent dry-run    → 30s smoke test
+/edth-agent team       → interview your team
+/edth-agent            → start/resume the workflow
+```
 
-1. `/edth-agent dry-run` — 30-second smoke test. Proves everything works.
-2. `/edth-agent team` — interview your team before you pick a problem.
-3. `/edth-agent` — same as `/edth-agent run`. Resume or start with Phase 0.
-4. Artefacts under `artefacts/`. State resumable via `artefacts/state.json`.
+Artefacts under `artefacts/`. State resumable via `artefacts/state.json`.
 
 ## Commands
 
 | Command | Effect |
 |---|---|
-| `/edth-agent` | **Default** — same as `run`. Resume or start the workflow. |
+| `/edth-agent` | **Default** — resume or start the workflow |
 | `/edth-agent help` | Show this help |
 | `/edth-agent status` | Show current phase, decisions, panel |
-| `/edth-agent run` | Run the next pending phase (interactive pauses in real mode) |
-| `/edth-agent run <N>` | Run phase N. Prior phases must be completed. |
-| `/edth-agent rerun <N>` | Re-execute phase N, overwriting its artefact |
-| `/edth-agent dry-run` | Auto-run phases 0–7 with sim owner + condensed panel. No interaction. ~30s. |
-| `/edth-agent skip-to <N>` | Generate minimal stub artefacts for phases 0..N-1, jump to phase N |
-| `/edth-agent team` | Interview each team member — skills, experience, blind spots, dynamics. Writes `artefacts/team_profile.md`. |
-| `/edth-agent team --skip` | Skip team discovery (not recommended). Writes a minimal stub. |
-| `/edth-agent validate` | Scan all artefacts for completeness and consistency. Report issues. |
-| `/edth-agent validate --quiet` | Same, but only report if issues found (used internally after each phase) |
+| `/edth-agent run` / `run <N>` | Run next or specific phase |
+| `/edth-agent rerun <N>` | Re-execute phase N (snapshots old artefact) |
+| `/edth-agent dry-run` | Auto-run phases 0–7 with sim owner + condensed panel |
+| `/edth-agent skip-to <N>` | Generate stubs for phases 0..N-1, jump to N |
+| `/edth-agent team` | Interview each team member → `artefacts/team_profile.md` |
+| `/edth-agent team --skip` | Skip team discovery with minimal stub |
+| `/edth-agent validate` | Scan all artefacts for issues |
+| `/edth-agent validate --quiet` | Same, but only report if issues found |
 | `/edth-agent reset` | Wipe `artefacts/` and start over |
-| `/edth-agent panel` | Show current panel + biases |
+| `/edth-agent panel <short>` | Chat with one judge in character |
 | `/edth-agent panel generate` | Auto-pick 5 judges for the chosen problem |
-| `/edth-agent panel add <short>` | Add a judge to the active panel |
-| `/edth-agent panel remove <short>` | Remove a judge from the active panel |
-| `/edth-agent panel <short>` | Free-form chat with one judge in character |
-| `/edth-agent judge list` | List all 12+ judges — name, tags, custom flag |
-| `/edth-agent judge add` | Create a new custom judge persona (interactive) |
-| `/edth-agent judge edit <short>` | Edit a judge's YAML — backed up before writing |
-| `/edth-agent judge remove <short>` | Soft-delete a judge — moved to judges/backups/ |
-| `/edth-agent judge reset <short>` | Restore a judge from its original shipped YAML |
-| `/edth-agent sheet` | Generate a printable Mom Test question sheet for owner interviews |
+| `/edth-agent sheet` | Generate a printable Mom Test question sheet |
+| `/edth-agent judge add` | Create a new custom judge persona |
+| `/edth-agent judge edit <short>` | Edit a judge's YAML (auto-backup) |
+| `/edth-agent judge remove <short>` | Safe-delete (moves to backups/) |
+| `/edth-agent judge reset <short>` | Restore from git |
+| `/edth-agent judge list` | List all judges with tags |
+| `/edth-agent review` | Submit a deck to all 12 judges as subagents |
+| `/edth-agent setup` | Guided first-time setup (uv, pre-commit, Exa MCP) |
 | `/edth-agent render` | Re-render the deck from current artefacts |
-| `/edth-agent review` | Submit a draft PDF/deck to the 12-judge panel for live Q&A — each judge asks domain-relevant questions [runs as subagents] |
-| `/edth-agent setup` | Guided first-time setup: uv sync, pre-commit hooks, Exa MCP install |
 
 ## Phases (0–8)
 
@@ -136,1414 +103,249 @@ Just type `/edth-agent`. The agent auto-checks your environment, resumes from wh
 | 7 | Deck & market | `artefacts/07_deck.md` + market/comp/BM + rendered |
 | 8 | Final review | `artefacts/08_summary.md` |
 
----
+**Special stages (between phases):**
+- Kill Chain Mapping — after Phase 3. See `references/prompts/kill-chain.md`.
+- One-Sentence Clarity — after Phase 5. See `references/prompts/clarity.md`.
+- Pitch Review — after Phase 7 or ad-hoc. See `references/prompts/review.md`.
 
-## Panel system (12 tough judges)
+## Panel system
 
-The agent maintains a panel of 5 judge personas that review every artefact. Library: `judges/*.yaml`.
+Panel of 5 judge personas reviews every artefact. Library: `judges/*.yaml`.
+See `references/judges.md` for judge profiles and prompt templates.
 
-### Panel lifecycle
+After Phase 2, call `/edth-agent panel generate` to auto-pick 5 judges.
+Judges run as subagents. Relevance gate applied — off-topic judges stay quiet.
+Panel lifecycle, per-phase actions, and CRUD commands at `references/judges.md`.
 
-1. After Phase 2, call `/edth-agent panel generate` to auto-pick 5 judges (Jaccard similarity on tags + hard rules).
-2. User can `panel add / remove / replace` before locking.
-3. Panel recorded in `state.json` under `panel.auto_selected`.
-4. `panel_mode: expanded` = one subagent per judge (higher quality, recommended). `panel_mode: condensed` = all judges in one LLM call (faster). Default: expanded for Phases 1, 5, 6, 7 (high-stakes); condensed for Phases 3, 4.
-5. **Relevance gate:** Every judge subagent first checks: "Is my expertise relevant to this topic?" If no (Jaccard < 0.2 on tags vs cluster themes), they return "No relevant questions — my expertise does not directly apply." Judges who stay quiet do NOT ask generic questions.
+## MCP tools
 
-### Per-phase panel participation
+- **Exa** — web search. `https://mcp.exa.ai/mcp`. Free, no API key.
+  Use for Phase 1 market signals, Phase 5 web research, Phase 7 market sizing.
+- **Context7** — library docs. `https://mcp.context7.com/mcp`. Free account at context7.com.
+  Use when solutions reference specific frameworks/libraries.
 
-| Phase | Panel action |
-|---|---|
-| 1 Triage | Each judge ranks top-3 clusters; Borda count via `agent.aggregation` |
-| 2 Elicit | Each judge contributes 2-3 hard questions from `hard_questions_seed` |
-| 3 Sub-problem | Each judge scores sub-problems independently; convergence surfaced |
-| 4 Ideation | Each judge rates 1-5 with one-line reasoning. Rejections require explanation. |
-| 5 Research & rank | Each judge re-scores top 5 post-research. `aggregation_mode: borda` or `approval` |
-| 6 Demo | Each judge previews script; gives 1-3 hard questions for live demo |
-| 7 Deck | Each judge previews deck; flags the slide they'd push back on hardest |
-| 8 Final | Each judge gives 👍/👎 + "what would change my mind" |
+## Linting
 
----
-
-## Judge Management
-
-Custom judges persist as YAML files in `judges/` and are auto-discovered
-by `load_judge_library()`. All mutations are backed up to `judges/backups/`.
-
-### Add a Judge (`/edth-agent judge add`)
-
-Execute this prompt verbatim:
-
-```
-You are helping a user create a new custom judge persona. The judge
-will be saved as `judges/<short>.yaml` and auto-discovered in all
-future sessions.
-
-Ask questions one at a time until ALL required fields in the judge
-schema (`agent.judge_schema.REQUIRED_FIELDS`) are filled:
-
-1. SHORT: "Short identifier? Lowercase, hyphens OK. Becomes
-   judges/<short>.yaml. Example: drone-operator."
-
-2. FULL NAME: "Full display name? Example: Maj. Elena Vasquez"
-
-3. TAGS: "Domain expertise? Pick from standard tags + custom.
-   Standard: autonomy, c-uas, c2, decision_support, ew, signal_proc,
-   swarm, uuv, usv, radar, hardware, software, ui_ux, detection,
-   communication, navigation, multi_domain, countermeasure.
-   Include 'all' if cross-domain. Example: ['c-uas','swarm','autonomy']"
-
-4. BACKGROUND: "One paragraph: who are they? Units served in?
-   Conflicts? Systems built or operated? What makes them qualified?"
-
-5. PRIORITIES (3-6): "What do they prioritize? Example:
-   ['operational relevance', 'survivability', 'simplicity']"
-
-6. ANTI-PRIORITIES (3-6): "What do they hate? Pet peeves, buzzwords.
-   Example: ['vendor lock-in', 'AI for AI's sake']"
-
-7. DECISION STYLE: "One sentence. Example: 'decisive; 30-second
-   answer or admit you don't know'"
-
-8. LANGUAGE PATTERNS (3-6): "Phrases they actually say. Capture their
-   voice. Example: ['on the flight line', 'what kills this']"
-
-9. SCORING BIASES: "How much do they over/under-weight each rubric
-   axis? Dict with all 4 axes. Example:
-   {impact: 0.10, innovation: -0.05, execution: 0.10, presentation: 0.00}.
-   Biases add to defaults (0.30/0.25/0.25/0.20)."
-
-10. KNOWLEDGE GAPS (2-4): "What do they NOT know? Example: ['consumer
-    tech', 'business modeling']"
-
-11. HARD QUESTIONS (3-6): "Questions they always ask. Get adapted per
-    phase. Example: ['What's the kill chain?', 'What's the 3am
-    maintenance story?']"
-
-Validate via `agent.judge_schema.validate_judge(data)`.
-Call `agent.judges.add_judge(judges_dir, data)`.
-Print: "✅ Judge {short} added. Available for auto-selection."
-```
-
-### Edit a Judge (`/edth-agent judge edit <short>`)
-
-Load `judges/{short}.yaml`. Present current profile. Ask what to change.
-Do NOT let them change the `short` field. Call
-`agent.judges.update_judge(judges_dir, short, data)`.
-Backup auto-created at `judges/backups/{short}.yaml.bak.<timestamp>`.
-
-### Remove a Judge (`/edth-agent judge remove <short>`)
-
-Call `agent.judges.remove_judge(judges_dir, short)`. File moved to
-`judges/backups/{short}.yaml.removed.<timestamp>` — safe-delete.
-
-### Reset a Judge (`/edth-agent judge reset <short>`)
-
-Restore the original shipped version: `git checkout HEAD -- judges/{short}.yaml`.
-If the file was never in git (custom judge), error.
-
-### List Judges (`/edth-agent judge list`)
-
-Call `agent.judges.list_judges_full(judges_dir)`. Print table:
-short, name, tags, custom flag, background excerpt.
+`uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/`
+Run after any code change. Pre-commit hooks auto-run on `git commit`.
 
 ---
 
-## Phase 1 — Triage
-
-### Phase 1 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are clustering and scoring problems from a parsed CSV. Input is available at
-`artefacts/01_problems.json` (produced by `agent.parse_csv`).
-
-Step 1 — Read and cluster:
-Read all problems. Group them into 4–8 clusters by theme. Each problem goes into
-exactly one cluster. Name each cluster with a 3-5 word descriptive label. Assign
-at least 2 `themes[]` per cluster from this vocabulary: autonomy, c-uas, c2,
-decision_support, ew, signal_proc, swarm, uuv, usv, radar, hardware, software,
-ui_ux, detection, communication, navigation, multi_domain, countermeasure.
-
-Step 2 — Score each cluster:
-Score each cluster on a 1-5 integer scale (5=best) on these axes:
-- impact: how much does solving this change outcomes?
-- innovation: how novel vs. existing solutions?
-- execution: how buildable in 48 hours?
-- presentation: how demo-able is this?
-
-IMPORTANT — Team fit adjustment: If `artefacts/team_profile.md` exists,
-read it. For each cluster, adjust the execution score based on team skills:
-  - If the cluster touches hardware and the team's hardware scores are all
-    "C) Software-only" → dock execution by 1-2 points.
-  - If the cluster involves ML and no team member rated above "C) Novice"
-    on ML maturity → dock execution by 1-2 points.
-  - If the cluster is purely software and the team has strong software
-    skills (multiple "A" answers) → boost execution by 1 point (cap at 5).
-  - If the cluster touches a defense domain nobody has experience in
-    (all "C) Brand new") → dock innovation by 1 (novel to them ≠ novel).
-  - Document any adjustments in the cluster notes.
-
-Output scores as a dict: {impact: X, innovation: Y, execution: Z, presentation: W}
-
-Step 3 — Market signal (mandatory, must include real data):
-For each cluster, run 1-2 web searches to answer: "Are there funded companies solving this?
-What's the competitive landscape?" Summarize in 1-2 sentences with at least one specific
-company name or product name. If you cannot find results, say "No commercial signal found
-for [topic]." Do NOT make up company names.
-
-Step 4 — Panel review:
-If a panel is locked in state.json, have each judge rank their top 3 clusters.
-Aggregate via `agent.aggregation.borda_count()`. If no panel yet, use default
-rubric scoring.
-
-Output format (write to `artefacts/01_triage.md`):
-
-# Triage Report
-
-## Cluster 1: [Name]
-**Themes:** theme1, theme2
-**Problems:** N
-**Axis scores:** impact: X, innovation: Y, execution: Z, presentation: W
-**Weighted total:** N.NN
-**Market signal:** [1-2 sentences with company names]
-**Problem IDs:** P-001, P-002, ...
-
-[Repeat for all clusters]
-
-## Panel summary
-[Panel rankings or "Panel not yet formed."]
-```
-
-Quality rules:
-- At least 4 clusters.
-- Each cluster must have ≥1 problem.
-- Every problem assigned exactly once.
-- Every market signal must reference a real search result.
-- Weighted total computed via `agent.rubric.score_to_weighted`.
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 1 — Triage: loading state...`
-2. `agent.validate.preflight_check(artefacts_dir, 1)` — abort if issues.
-3. `agent.state.mark_phase_in_progress(state, 1)`. Save state.
-4. Parse CSV. Print: `⚙️  Phase 1 — Triage: parsing CSV...`
-   Use `agent.parse_csv.parse_problems_safe(csv_path)` to get (result, error). If error, print it and abort with `rollback_phase`. Print: `⚙️  Phase 1 — Triage: parsed {N} problems.` Save to `artefacts/01_problems.json`. Verify file exists and size > 0.
-5. `agent.normalize.assign_quality_flags()` on each problem. `agent.normalize.dedupe_problems()`. Print: `⚙️  Phase 1 — Triage: {N} problems after deduplication.`
-6. Print: `⚙️  Phase 1 — Triage: clustering problems...`
-7. Execute the prompt template above verbatim. Do not improvise.
-8. If panel is locked, run panel review: Borda aggregation. Print: `⚙️  Phase 1 — Triage: panel reviewing clusters...`
-9. Build `agent.triage.TriageReport`, write via `agent.triage.write_triage_report()`. **Post-write: verify file exists and size > 0.**
-10. Print: `✅ Phase 1 — Triage: {N} clusters written to artefacts/01_triage.md.`
-11. `agent.mark_phase_completed(state, 1, artefacts_dir / "01_triage.md")`. Save state.
-12. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-13. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
-14. Write audit entry.
-15. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
-
----
-
-## Phase 2 — Elicit & narrow
-
-### Phase 2 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are generating structured owner questions for the top 3 problem clusters
-from Phase 1, following The Mom Test methodology (Rob Fitzpatrick).
-
-Read `artefacts/01_triage.md` to get the clusters and their problem IDs.
-
-IMPORTANT: these problem owners are soldiers, pilots, drone operators, EW
-specialists, tank commanders — not procurement officers. Adapt your language.
-
-CRITICAL RULES — The Mom Test (operator edition):
-- NEVER ask "Would you use X?" or "Do you think X would help?" (leading)
-- NEVER ask hypotheticals or scales: "On a scale of 1-10..." (abstract)
-- ALWAYS ask about specific missions/sorties: "Last time this failed..."
-- ALWAYS ask about current kit: "What do you use today? What's wrong with it?"
-- ALWAYS look for concrete cost: sorties scrubbed, birds lost, time-to-kill,
-  equipment damaged, people put at risk, territory lost.
-- ALWAYS probe for failed attempts: "What did you try that didn't work?"
-- If they say "it's a big problem" — "How many times last week? Which mission?"
-- If they say "we need this" — "What would have happened differently last
-  Tuesday if you'd had it?"
-
-Step 1 — Owner questions (3 per cluster, minimum 9 total):
-
-CLUSTER QUESTIONS (3 per cluster):
-  Q-0XX: "Walk me through the last mission where [cluster topic] was a factor.
-         What happened, step by step — from mission brief to debrief?"
-         (past incident, not opinion)
-  Q-0XX: "What's your current kit or workaround for [cluster topic]? What's its
-         failure mode when it lets you down?" (current behavior + pain)
-  Q-0XX: "What did your unit try before this that didn't work? Why was it
-         abandoned?" (failed attempts)
-
-CROSS-CUTTING QUESTIONS:
-  Q-0XX: "In the last month, how many sorties or missions were impacted because
-         [cluster topic] wasn't solved? Give me the worst one — what was the
-         operational outcome?" (concrete frequency + operational cost)
-  Q-0XX: "Who in the chain of command is pushing hardest for a solution to this?
-         What happens to their unit's readiness if nothing changes in 6 months?"
-         (command pressure = real demand)
-  Q-0XX: "If you had to show me proof this is a real problem — an after-action
-         report, a mission debrief slide, a video clip — what would you show me?"
-         (evidence of pain)
-  Q-0XX: "Who in your unit — or another unit — feels this pain even more than
-         you? Can you put me in touch?" (referral check — no referral = shallow)
-
-Tag all with asker="mom-test". These are the structured discovery questions.
-
-Step 2 — Judge questions:
-Load the locked panel from state.json. For each judge, read their
-`hard_questions_seed` field from the YAML and add 2-3 questions adapted
-to the specific clusters. Tag these with asker=<judge_short>.
-
-Important: judges should ALSO follow Mom Test principles — ask about
-past incidents and concrete behavior, not opinions.
-
-Step 3 — Capture answers:
-If owner_mode=real: present questions to the user one at a time. For each
-answer, apply the Mom Test sniff test:
-  - Did they describe a concrete past incident? If not, ask for one.
-  - Did they mention a specific cost (hours, people, dollars)? If not, ask.
-  - Did they offer a compliment ("sounds great!")? Redirect to evidence.
-  - Did they say "a lot of people have this problem"? Ask for an intro.
-
-If owner_mode=sim: load the persona YAML, role-play the owner, generate
-specific, past-tense answers for every question. Every answer must reference
-at least one concrete incident, metric, or named person. "It depends" is
-only acceptable when followed by a specific example.
-
-Step 4 — Re-score candidates:
-Re-score the top 3 candidate problems using the rubric axes, now informed by
-the owner answers. For each candidate, write 2-3 sentences of reasoning that
-reference specific answers — quote the answer that most changed your score.
-
-Output: Build `agent.candidates.Candidate` objects and call
-`agent.candidates.write_candidate_problem()`. The weighted score is computed via
-`Candidate.weighted_score()` using the default rubric.
-```
-
-Quality rules:
-- At least 6 owner questions total.
-- Every judge in the panel contributes ≥2 questions.
-- Every candidate has reasoning that references specific owner answers.
-- No generic reasoning like "high impact" without specifics.
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 2 — Elicit: generating owner questions...`
-2. `agent.state.mark_phase_in_progress(state, 2)`. Save state.
-3. Load `01_triage.md`. Read top 3 clusters.
-4. Execute prompt template above.
-5. Build `OwnerQuestion` objects. Print: `⚙️  Phase 2 — Elicit: {N} questions generated.` Write via `agent.elicitation.write_owner_questions()`.
-6. Capture answers. Print: `⚙️  Phase 2 — Elicit: capturing answers...` Write via `agent.elicitation.write_owner_answers()`.
-7. Print: `⚙️  Phase 2 — Elicit: re-scoring candidates...`
-8. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
-9. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
-10. **Second team check:** After Phase 2 (problem chosen), cross-reference `artefacts/team_profile.md` against the chosen problem. Print: `🔍  Capability check: this problem requires [skills]. Your team has [gaps].` Specifically: check hardware requirement vs team hardware answers, ML requirement vs ML maturity, domain depth vs team domain knowledge. If major gaps exist, print: `⚠️  Warning: your team may not have the skills for this problem. Consider picking a different candidate. Continue? (y)`
-
-    Also, produce an **adjacent problem suggestion**. Look at `artefacts/01_triage.md` for clusters that scored high on execution but lower on impact — problems your team *could* easily build but chose not to. Print: `💡  Adjacent consideration: in the [{cluster}] cluster, [{problem_id}] scored [execution_scores] on execution and [impact_score] on impact. Given your team's strengths in [team_strengths], this problem may be a better fit. Would you like to reconsider? (y/n)` If they say yes, re-run Phase 2 with that problem as the top candidate.
-11. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
-12. Print: `✅ Phase 2 — Elicit: problem {pid} chosen, panel of {N} judges locked.`
-13. `agent.mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
-14. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-15. Print time + timebox check.
-16. Write audit.
-17. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Phase 3 — Sub-problem decompose
-
-### Phase 3 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are decomposing a chosen problem into tractable sub-problems. Read the
-chosen problem from `artefacts/02_candidate_problem.md` (the one the user selected,
-recorded in state.json decisions.chosen_problem_id).
-
-Step 1 — Decompose:
-Break the problem into 5-8 sub-problems. Each sub-problem must be a specific,
-self-contained slice that could be solved independently. Use this structure:
-- SP-1: [Title] — [1-2 sentence description]
-- SP-2: [Title] — [1-2 sentence description]
-  ...
-
-Do NOT produce overlapping sub-problems. Do NOT produce sub-problems that
-are "the whole problem but smaller." Each must be distinct.
-
-Step 2 — ROI score each sub-problem:
-Score each sub-problem on a 1-5 scale:
-- impact: how much does solving this sub-problem matter to the larger goal?
-- time_fit: can this be built in 48 hours?
-- demo_ability: can this make a compelling demo?
-- dependency_risk: how many external dependencies? (1=no deps, 5=blocked without others)
-
-The ROI score auto-computes via `agent.sub_problem.SubProblem.roi_score()` which
-inverts dependency_risk (high score = low risk) and applies weights 0.30/0.30/0.25/0.15.
-
-Output: Build `agent.sub_problem.SubProblem` objects. Score using the format above.
-```
-
-Quality rules:
-- At least 5, at most 8 sub-problems.
-- No two sub-problems should share >50% overlap in scope.
-- dependency_risk must be justified (why this risk level?).
-- Output written via `agent.sub_problem.write_sub_problem()`.
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 3 — Sub-problem: decomposing...`
-2. `agent.state.mark_phase_in_progress(state, 3)`. Save state.
-3. Load chosen problem from state and `02_candidate_problem.md`.
-4. Execute prompt template above.
-5. Panel: each judge scores sub-problems on the 4 ROI axes.
-6. Write via `agent.sub_problem.write_sub_problem()`. Print: `✅ Phase 3 — Sub-problem: {N} sub-problems written.`
-7. User picks 1. Record via `set_decision("chosen_sub_problem_id", ...)`.
-8. `agent.mark_phase_completed(state, 3, artefacts_dir / "03_chosen_sub_problem.md")`. Save state.
-9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-10. Print time + timebox check.
-11. Write audit. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Kill Chain Mapping
-
-Runs after Phase 3 (sub-problem chosen). Not a separate phase — a mandatory
-1-minute check that writes a short paragraph into `artefacts/03_chosen_sub_problem.md`.
-
-### Kill Chain Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are mapping the chosen sub-problem to battlefield reality — kill chain
-position, European defense priorities, and Ukraine's proven lessons.
-
-Read `artefacts/03_chosen_sub_problem.md` for the chosen sub-problem
-and `artefacts/02_candidate_problem.md` for the larger problem context.
-
-Answer concisely — 1-2 sentences per question. No fluff. This section
-is appended to 03_chosen_sub_problem.md and the team reads it before
-they start building.
-
-PART A — THE BATTLEFIELD CONTEXT
-
-RESEARCH FIRST: Run 2-3 web searches to ground your answers in the
-latest data. Search for: "[problem domain] Ukraine priorities 2025 2026"
-and "EU defence [problem domain] capability gap 2026". Use specific
-facts from search results — budgets, production numbers, operational
-gaps cited by commanders. Cite sources.
-
-A1. KILL CHAIN: Find → Fix → Track → Target → Engage → Assess.
-    Which link does this solution sit in? What happens in the link
-    BEFORE — if that link fails, does yours still matter?
-
-A2. UKRAINE PRIORITIES (2026): Ukraine's MoD states top 3 priorities
-    are air/missile defense, Ukrainian-made UAVs, and extended-range
-    munitions (~80% of security assistance). Does this problem directly
-    serve one of these? If no, is it an enabler (EW, comms, logistics)
-    that makes those priorities possible?
-
-A3. EUROPEAN DEFENSE FLAGSHIPS: The EU Readiness Roadmap 2030 defines
-    four flagships — European Drone Defence, Eastern Flank Watch,
-    European Air Shield, European Space Shield. Does this solution
-    fit into any of these? Which one? (Cite the specific flagship.)
-
-A4. DRONE WAR REALITY: Ukraine produces 7M+ drones/year. FPVs cost
-    $500-$2K. Fiber-optic drones bypass EW. Computer-vision drones
-    bypass jamming. The trend is toward AI-enabled, GPS-denied,
-    swarming systems. Where does this solution sit in that evolution?
-
-PART B — EUROPEAN SOVEREIGNTY & SCALE
-
-B1. ATTRITION MATH: Shoot down a $35K Shahed with a $3.7M missile =
-    Russia wins by economics. What's the cost-exchange ratio of this
-    solution vs the threat it counters? Is it sustainable at scale?
-
-B2. PRODUCTION SCALE: Europe produces <100K small drones/year. Ukraine
-    produces millions. Can European industry mass-produce this? What
-    are the bottlenecks — chips? rare earths? ITAR components? single-
-    source suppliers?
-
-B3. INTEROPERABILITY: Does this integrate with NATO STANAGs, Ukrainian
-    systems (Delta, Kropyva), Starlink, SDR radios? Or does it require
-    its own ecosystem?
-
-B4. SOVEREIGNTY: Is this European-made or dependent on non-EU supply?
-    If the US changes policy tomorrow (ITAR, export controls, political
-    shift), does your supply chain survive?
-
-PART C — FIELD REALITY
-
-C1. TRAINING: Can a conscript or territorial defense volunteer
-    operate this with 4 hours of training? Or does it need a
-    specialist with 6 months of school?
-
-C2. LOGISTICS: Power source? Generator? Vehicle trailer? Battery
-    weight? Can two soldiers carry it? Does it need Starlink?
-
-C3. COUNTER-COUNTERMEASURE: Russia adapts EW in weeks (fiber-optic
-    drones emerged to counter jamming in <6 months). Is this solution
-    field-upgradable? Can models, frequencies, or tactics be changed
-    without returning to depot?
-
-C4. COST PER EFFECT: If the threat costs $X and your countermeasure
-    costs $Y, at what ratio does the adversary win by attrition?
-    Give numbers.
-
-C5. DUAL-USE / IHL: Civilian risk? Distinction/proportionality?
-    Human in the loop? Could this be repurposed for civilian harm?
-
-Append all answers as a new section
-`## Kill Chain & European Defense Context`
-to the bottom of `artefacts/03_chosen_sub_problem.md`.
-Do NOT overwrite — append. Section must be under 2,500 words total.
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Kill Chain — mapping to F2T2EA...`
-2. Execute prompt template above.
-3. Append output to `artefacts/03_chosen_sub_problem.md`.
-4. Print: `✅ Kill chain mapping appended to artefacts/03_chosen_sub_problem.md.`
-5. Write audit entry.
-
----
-
-## Phase 4 — Divergent ideation
-
-### Phase 4 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are generating solution ideas. Read the chosen sub-problem from
-`artefacts/03_chosen_sub_problem.md`.
-
-IMPORTANT: You MUST generate at least 20 distinct ideas. Use ALL of these
-techniques to push past obvious answers:
-
-Technique 1 — SCAMPER (3 ideas):
-  Substitute / Combine / Adapt / Modify / Put to another use / Eliminate / Reverse
-
-Technique 2 — What would X do? (3 ideas):
-  Palantir, Anduril, Skydio, a 16-year-old with a Raspberry Pi, a frontline operator
-
-Technique 3 — 10X version (3 ideas):
-  If you had 100x the budget/time/data. What's the moonshot?
-
-Technique 4 — Constraint removal (3 ideas):
-  No latency constraints. Unlimited compute. Perfect data. Hardware costs are zero.
-
-Technique 5 — Anti-solution (3 ideas):
-  Deliberately bad ideas that reveal a hidden insight. "The absolute worst way to
-  solve this would be... which tells us we should..."
-
-Technique 6 — Analogy transfer (3 ideas):
-  How would you solve this if it were: a video game, a cooking recipe, a logistics
-  problem, a dating app?
-
-Technique 7 — Wildcard (2+ ideas):
-  Free-form: anything else novel.
-
-Output format: I-001: [One-line idea description]
-
-Then run `agent.ideation.dedupe_ideas(ideas, threshold=0.7)` to remove near-dupes.
-
-Panel review: each judge rates every unique idea 1-5 with one-line reasoning.
-Ideas rated 1-2 require an explanation. Collect rejections in
-`judge_rejections`.
-
-Build `agent.ideation.Idea` objects with rating, panel_ratings, and
-judge_rejections. Sort by rating descending. Top 5 + "judges hated this" section.
-```
-
-Quality rules:
-- At least 20 ideas before dedup. Acknowledge if you produce fewer.
-- At least 8 ideas after dedup. Re-generate if fewer than 8 remain.
-- Top-rated idea must have >0.5 spread from lowest-rated (diversity check).
-- "Judges hated this" section must include at least 2 ideas with rejection reasons.
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 4 — Ideation: generating ideas with 7 techniques...`
-2. `agent.state.mark_phase_in_progress(state, 4)`. Save state.
-3. Load `03_chosen_sub_problem.md`.
-4. Execute prompt template above.
-5. Dedupe via `agent.ideation.dedupe_ideas()`. Print: `⚙️  Phase 4 — Ideation: {N} ideas after dedup.`
-6. In real mode: offer user to add 1-3 ideas.
-7. Print: `⚙️  Phase 4 — Ideation: panel rating {N} ideas...`
-8. Panel: rate every idea 1-5.
-9. Sort, surface top 5 + "judges hated this".
-10. Write via `agent.ideation.write_solution_candidates()`. Print: `✅ Phase 4 — Ideation: {N} ideas written.`
-11. `agent.mark_phase_completed(state, 4, artefacts_dir / "04_solution_candidates.md")`. Save state.
-12. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-13. Print time.
-14. Write audit. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Phase 5 — Research & rank
-
-### Phase 5 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are researching and ranking the top 5 solution candidates from Phase 4.
-Read `artefacts/04_solution_candidates.md`. Extract the top 5 ideas by rating.
-
-Step 1 — Web research (per idea, 1-2 searches each):
-For each idea, search for:
-- Prior art: has this been built before? who built it? when?
-- SOTA: what's the current best approach? published paper?
-- Competitors: funded companies? open-source projects?
-- TRL: what technology readiness level is typical for this approach?
-- Regulatory: any arms-control, ITAR, or IHL constraints?
-
-Write a 3-5 sentence research summary per idea. Include at least one specific
-URL, company name, or paper citation per summary. If no results, say
-"No public results found for [specific query]."
-
-Step 2 — Panel re-scoring:
-Each judge re-scores the top 5 on the 4 rubric axes using a 1-5 scale.
-If panel_mode=expanded: score each judge separately. If condensed: score all
-judges in one response.
-
-Aggregate via `agent.aggregation.weighted_borda()` using judge scoring_biases
-as weights. Record spread (max - min panel score) per solution.
-
-Step 3 — Owner validation:
-If owner_mode=real: present ranking to user, get their pick. They can override.
-If owner_mode=sim: the persona picks from the top 2. Record dissents.
-
-Build `agent.ranking.RankedSolution` objects. Write via
-`agent.ranking.write_ranked_solutions()`. Write owner pick via
-`agent.ranking.write_owner_pick()`.
-```
-
-Quality rules:
-- Every idea has ≥1 real search result cited.
-- Spread >0 for at least 2 top ideas (genuine disagreement is good).
-- Owner pick must reference specific research findings.
-- Record decision via `agent.state.set_decision(state, "chosen_solution_id", ...)`.
-
-### Implementation steps
-
-1. Load `04_solution_candidates.md`. Extract top 5.
-2. Execute prompt template above.
-3. Web research per idea.
-4. Panel re-scores.
+## Per-Phase Execution
+
+Each phase has:
+- A prompt template in `references/prompts/phase-{N}.md`
+- Implementation steps below
+- Quality rules
+
+When executing a phase:
+1. Read the prompt template from `references/prompts/phase-{N}.md`
+2. Execute it verbatim — do not improvise
+3. Follow the implementation steps below for Python glue
+4. Validate, track time, ask approve
+
+### Phase 0 — Onboarding
+
+Read `references/prompts/phase-0.md`, then:
+
+1. `⚙️  Phase 0 — Onboarding: loading defaults...`
+2. `mark_phase_in_progress(state, 0)`. Save state.
+3. `agent.state.load_state()` + `agent.context.default_context()`.
+4. Execute prompt. Save via `agent.context.save_context(artefacts_dir, ctx)`.
+5. `✅ Phase 0 — Onboarding: context saved.`
+6. `mark_phase_completed(state, 0, artefacts_dir / "00_context.yaml")`. Save state.
+7. Validate, time, audit, approve.
+
+### Phase 1 — Triage
+
+Read `references/prompts/phase-1.md`, then:
+
+1. `⚙️  Phase 1 — Triage: loading state...`
+2. `preflight_check(artefacts_dir, 1)`. `mark_phase_in_progress(state, 1)`. Save state.
+3. Parse CSV via `agent.parse_csv.parse_problems_safe(csv_path)`. If error, abort with `rollback_phase`. Save `01_problems.json`. Verify exists + size > 0.
+4. `agent.normalize.assign_quality_flags()` on each. `agent.normalize.dedupe_problems()`.
+5. Execute prompt template. If panel locked, run Borda aggregation.
+6. Build `agent.triage.TriageReport`. Write via `agent.triage.write_triage_report()`. Post-write verify.
+7. `✅ Phase 1 — Triage: {N} clusters written.`
+8. `mark_phase_completed(state, 1, artefacts_dir / "01_triage.md")`. Save state.
+9. Validate, time + timebox, audit, approve.
+
+### Phase 2 — Elicit & narrow
+
+Read `references/prompts/phase-2.md`, then:
+
+1. `⚙️  Phase 2 — Elicit: generating owner questions...`
+2. `mark_phase_in_progress(state, 2)`. Save state.
+3. Load `01_triage.md`. Execute prompt template.
+4. Build `OwnerQuestion` objects. Write via `agent.elicitation.write_owner_questions()`.
+5. Capture answers. Write via `agent.elicitation.write_owner_answers()`.
+6. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
+7. User picks 1. Record via `set_decision(state, "chosen_problem_id", ...)`.
+8. **Second team check:** Cross-reference `team_profile.md` against chosen problem. Print capability gaps.
+   **Adjacent problem suggestion:** Look for high-execution, lower-impact clusters the team *could* easily build. Print: `💡 Adjacent consideration: {problem} scored {scores}. Reconsider? (y/n)`.
+9. Auto-pick panel: `agent.judges.select_panel()`. Store in state.
+10. `✅ Phase 2 — Elicit: problem {pid} chosen.`
+11. `mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
+12. Validate, time + timebox, audit, approve.
+
+### Phase 3 — Sub-problem decompose
+
+Read `references/prompts/phase-3.md`, then:
+
+1. `⚙️  Phase 3 — Sub-problem: decomposing...`
+2. `mark_phase_in_progress(state, 3)`. Save state.
+3. Load chosen problem from state + `02_candidate_problem.md`. Execute prompt.
+4. Panel: each judge scores sub-problems on 4 ROI axes.
+5. Write via `agent.sub_problem.write_sub_problem()`. `✅ Phase 3 — Sub-problem: {N} sub-problems written.`
+6. User picks 1. Record via `set_decision("chosen_sub_problem_id", ...)`.
+7. `mark_phase_completed(state, 3, artefacts_dir / "03_chosen_sub_problem.md")`. Save state.
+8. Validate, time + timebox, audit, approve.
+
+#### Kill Chain Mapping
+
+Runs after Phase 3 completes. Read `references/prompts/kill-chain.md`, then:
+1. `⚙️  Kill Chain — mapping to F2T2EA + European defense context...`
+2. Execute prompt. Append output to `03_chosen_sub_problem.md`.
+3. `✅ Kill chain mapping appended.`
+
+### Phase 4 — Divergent ideation
+
+Read `references/prompts/phase-4.md`, then:
+
+1. `⚙️  Phase 4 — Ideation: generating ideas with 7 techniques...`
+2. `mark_phase_in_progress(state, 4)`. Save state.
+3. Load `03_chosen_sub_problem.md`. Execute prompt.
+4. Dedupe via `agent.ideation.dedupe_ideas()`.
+5. In real mode: offer user to add 1-3 ideas.
+6. Panel: rate every idea 1-5.
+7. Sort, surface top 5 + "judges hated this".
+8. Write via `agent.ideation.write_solution_candidates()`. `✅ Phase 4 — Ideation: {N} ideas written.`
+9. `mark_phase_completed(state, 4, artefacts_dir / "04_solution_candidates.md")`. Save state.
+10. Validate, time + timebox, audit, approve.
+
+### Phase 5 — Research & rank
+
+Read `references/prompts/phase-5.md`, then:
+
+1. `⚙️  Phase 5 — Research: web searching top 5 ideas...`
+2. `mark_phase_in_progress(state, 5)`. Save state.
+3. Load `04_solution_candidates.md`. Extract top 5. Execute prompt.
+4. Web research per idea. Panel re-scores.
 5. Aggregate, write `05_ranked_solutions.md`.
-6. Owner validates, write `05_owner_pick.md`.
-7. Record decision. Write audit. Mark phase complete.
+6. Owner validates, write `05_owner_pick.md`. `✅ Phase 5 — Research: solution {id} chosen.`
+7. Record decision. `mark_phase_completed(state, 5, artefacts_dir / "05_ranked_solutions.md")`. Save state.
+8. Validate, time + timebox, audit, approve.
+
+#### One-Sentence Clarity
+
+Runs after Phase 5. Read `references/prompts/clarity.md`, then:
+1. `⚙️  One-Sentence Clarity — stating the project...`
+2. Execute prompt. Interactive check only — no file written.
+3. Record the final sentence in the audit entry.
+
+### Phase 6 — Demo & narrative
+
+Read `references/prompts/phase-6.md` (demo plan) and `references/prompts/task-assignment.md`, then:
+
+1. `⚙️  Phase 6 — Demo: writing plan...`
+2. `mark_phase_in_progress(state, 6)`. Save state.
+3. Load `05_owner_pick.md`. Execute demo prompt.
+4. Panel: previews script, gives Q&A questions.
+5. Write via `agent.demo_plan.write_demo_plan()`. `✅ Phase 6 — Demo: demo plan written.`
+6. Execute task assignment prompt. Writes `artefacts/demo_tasks.md`.
+7. `mark_phase_completed(state, 6, artefacts_dir / "06_demo_plan.md")`. Save state.
+8. Validate, time + timebox, audit, approve.
+
+### Phase 7 — Deck & market research
+
+Read `references/prompts/phase-7.md`, then:
+
+1. `⚙️  Phase 7 — Deck: researching market...`
+2. `mark_phase_in_progress(state, 7)`. Save state.
+3. Load all prior artefacts. Execute prompt.
+4. Write `07_market.md`, `07_competition.md`, `07_business_model.md`.
+5. Compile deck via `agent.deck.compile_deck_md()`. Render via `agent.deck.render_deck()`.
+6. `✅ Phase 7 — Deck: rendered to artefacts/07_deck.html.`
+7. Panel reviews slides.
+8. `mark_phase_completed(state, 7, artefacts_dir / "07_deck.md")`. Save state.
+9. Validate, time + timebox, audit, approve.
+
+### Phase 8 — Final review
+
+Read `references/prompts/phase-8.md`, then:
+
+1. `⚙️  Phase 8 — Final: writing summary...`
+2. `mark_phase_in_progress(state, 8)`. Save state.
+3. Load all artefacts. Execute prompt.
+4. Write `08_summary.md` via `agent.summary.write_summary()`.
+5. Panel: final verdicts. Record dissent.
+6. Final deck re-render check.
+7. `mark_phase_completed(state, 8, artefacts_dir / "08_summary.md")`. Save state.
+8. Validate. Print: `⏱  Total: {elapsed:.0f} min across 9 phases.`
+9. Audit. Mark run complete.
 
 ---
 
-## Phase 6 — Demo & narrative
+## Special Commands
 
-### Phase 6 Prompt Template
+### Team Discovery (`/edth-agent team`)
 
-Execute this prompt verbatim:
+Read `references/prompts/team-discovery.md`, then:
+1. `⚙️  Team Discovery — interviewing the team...`
+2. Ask how many members. Go person by person: intro → word count (≥50) → 5 A/B/C questions → blind spots → profile.
+3. After all: team dynamics (pitcher, demo, builder, deck).
+4. Write via `agent.team.write_team_profile()`. `✅ Team profile saved.`
 
-```
-You are planning the live demo for the chosen solution. Read the chosen
-solution from `artefacts/05_owner_pick.md`.
+### Question Sheet (`/edth-agent sheet`)
 
-Step 1 — Thin demo definition:
-Define the smallest thing we can build that demonstrates the "wow" moment.
-What's the input? What does the operator see? What's the output? What's the
-one moment that makes the room lean forward? Write 2-3 sentences.
+Read `references/prompts/sheet.md`, then:
+1. `⚙️  Question Sheet — generating...`
+2. Verify Phase 1 completed (`01_triage.md` exists).
+3. Execute prompt. Write via `agent.sheet.write_question_sheet()`.
+4. `✅ Question sheet saved to artefacts/question_sheet.md.`
 
-Step 2 — 3-minute demo script:
-Write a time-cued script with these beats:
-- 0:00–0:20 — Cold open: one sentence that hooks the room. (Example: "3 seconds
-  for a decision lives matter. This is what 3 seconds looks like.")
-- 0:20–0:40 — Problem setup: what's the pain, who feels it, why now.
-- 0:40–2:00 — Live demo: walk through the workflow. "Here's the raw feed.
-  Watch what happens in 3 seconds." Narrate what's happening on screen.
-- 2:00–2:40 — How it works under the hood (1-2 slides max).
-- 2:40–3:00 — Closing: what's next, who we need, call to action.
+### Pitch Review (`/edth-agent review`)
 
-Use the format: `[0:00] Cold open line.` Each beat is one timestamped line.
-Minimum 10 beats.
+Read `references/prompts/review.md`, then:
+1. `⚙️  Pitch Review — reading deck...`
+2. Ask for deck (PDF, HTML, or `artefacts/07_deck.md`). Extract text.
+3. `⚙️  Pitch Review — dispatching 12 judge subagents...`
+4. Dispatch one subagent per judge. Collect results.
+5. Compile review. Write `artefacts/pitch_review.md`.
+6. `✅ Pitch review complete. {N} judges contributed, {M} stayed quiet.`
+7. If Signal Quality is weak: `⚠️  Only {N} of 12 judges found this relevant.`
 
-Step 3 — 30-second elevator pitch:
-One paragraph, no jargon, that a non-technical person can repeat.
-Example: "Commanders in multi-domain operations drown in data. Our dashboard
-processes feeds from air, land, and naval assets and shows the critical threat
-in under 3 seconds — with an AI-recommended course of action. Think of it as
-Waze for the battlefield."
+### Guided Setup (`/edth-agent setup`)
 
-Step 4 — Q&A prep:
-Panel review: each judge gives 1-3 hard questions they'd ask during the live demo.
-Then generate concise answers (2-3 sentences each).
-Minimum 8 Q&A pairs.
+Read `references/prompts/setup.md`, then:
+1. `⚙️  Guided Setup — let's get you running.`
+2. Execute prompt: bash setup.sh → pre-commit → Exa MCP → optional Context7 → verify.
 
-Step 5 — Risk register:
-Identify 5-8 things that could go wrong during the demo or project.
-For each: what, likelihood (high/medium/low), impact (high/medium/low), mitigation.
-Include at least: "demo crashes on stage", "judge doesn't know the domain".
+### Judge Management
 
-IMPORTANT — Pre-mortem (must include this as the last entry):
-"It's Sunday at 3pm. The judges just announced the winners. You didn't win.
-Why not? Be brutally honest." Write this as a risk entry titled "Pre-mortem:
-why we lost." This is the most important entry in the register.
-
-IMPORTANT — Adversary countermeasure (must include this as an entry):
-Load the `red-team-adversary` judge's YAML. Ask: "If I were the adversary, how
-would I defeat this solution in 6 months?" Write this as a risk entry titled
-"Adversary countermeasure: how the enemy defeats this."
-
-Build `agent.demo_plan.DemoPlan` and write via `agent.demo_plan.write_demo_plan()`.
-```
-
-Quality rules:
-- Script has ≥10 timed beats covering all 5 sections.
-- Pitch <100 words.
-- Every judge in panel contributes questions.
-- Risk register includes "demo crashes" and "domain knowledge gap".
-- At least 2 specific mitigations involve pre-recording or backup plans.
-
-### Implementation steps
-
-1. Load `05_owner_pick.md`.
-2. Execute prompt template above.
-3. Panel: previews script, gives Q&A questions.
-4. Write via `agent.demo_plan.write_demo_plan()`.
-5. **Task assignment** — run the Task Assignment prompt (below). Writes `artefacts/demo_tasks.md`.
-6. Write audit. Mark phase complete.
-
-### Phase 6 — Task Assignment Prompt
-
-Execute this prompt verbatim (runs after the demo plan is written):
-
-```
-You are decomposing the chosen solution into concrete implementation
-tasks and assigning them to specific team members.
-
-Read `artefacts/team_profile.md` and `artefacts/05_owner_pick.md`.
-
-STEP 1 — Decompose the solution into 5-8 tasks:
-Each task must be:
-  - Concrete: "Build the React dashboard with hardcoded feed data" not
-    "Work on the frontend."
-  - Independent enough that one person can own it.
-  - Track-level: "Train the model on synthetic threat data" not
-    "Research ML approaches."
-  - Include a rough time estimate (2h, 4h, 8h, etc.).
-
-STEP 2 — For each task, assign to the best-fit team member:
-Read team_profile.md and match each task to the person whose skills,
-experience, and quick-fire answers best fit:
-  - If Alice said "React, D3" and "I love presenting," she gets the
-    dashboard UI and any demo-facing work.
-  - If Bob said "PyTorch, ONNX, edge deployment" he gets the ML pipeline.
-  - If someone said "C) I'm learning" on a skill the task needs, flag it.
-  - PREVENT double-booking: if Bob is already assigned 16h of tasks,
-    stop adding to his plate. Flag the overflow.
-
-For each assignment, write 1 sentence explaining WHY this person fits.
-Quote their team_profile self-intro or quick-fire answer as evidence.
-
-STEP 3 — Flag critical gaps:
-If a task requires a skill NOBODY on the team has (e.g. hardware
-deployment, and everyone answered "C) Software-only" on the hardware
-question), mark it as a GAP with fit_reasoning explaining why nobody
-fits. These become the `critical_gaps` in the plan.
-
-STEP 4 — Suggest build order:
-Order the tasks so that dependencies are respected (ML model training
-before deployment, backend API before frontend integration). Output
-as a list of task IDs in recommended order.
-
-STEP 5 — Write the plan:
-Build `agent.demo_tasks.DemoTask` objects for each task, then a
-`agent.demo_tasks.DemoTaskPlan` and write via
-`agent.demo_tasks.write_demo_tasks(artefacts_dir, plan)`.
-Output goes to `artefacts/demo_tasks.md`.
-
-Tell the user: "Task assignments saved to `artefacts/demo_tasks.md`.
-Each team member can see exactly what they own and how long it should take."
-```
-
----
-
-## Phase 7 — Deck & market research
-
-### Phase 7 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are producing the final pitch deck. You have all prior artefacts.
-Read `artefacts/02_candidate_problem.md`, `artefacts/03_chosen_sub_problem.md`,
-`artefacts/05_owner_pick.md`, `artefacts/06_demo_plan.md`.
-
-Step 1 — Market research (write 07_market.md):
-Run 3-5 web searches on the solution's domain. Answer:
-- TAM/SAM/SOM with dollar figures or unit estimates. Be specific.
-  Example: "TAM: $12B global C4ISR market. SAM: $3B tactical C2. SOM: $150M."
-- Growth trends and key drivers. Cite at least one source.
-- 2-3 buyer personas with 1-line descriptions.
-
-Step 2 — Competition analysis (write 07_competition.md):
-Run 3-5 web searches. Produce at least 3 direct/adjacent competitors with:
-name, strength, weakness, our edge. Table format.
-Moat assessment: 2-3 defensible advantages (IP, data, network effects, regulatory).
-
-Step 3 — Business model (write 07_business_model.md):
-Revenue model, pricing strategy, go-to-market (specific phases with timelines),
-defensibility. Must include at least one specific acquisition pathway
-(OTA, SBIR/STTR, CSO, traditional FAR).
-
-Step 4 — Generate deck slides:
-For each slide, write Marp-flavored markdown (front-matter at top, `---` as
-slide separator, `<!-- _class: lead -->` for title slides).
-
-Slide order (MilTech priority):
-1. Cover: project name + hackathon + team + date
-2. Problem: battlefield pain + why it matters + one-sentence pitch from Phase 5.5
-3. Solution: one-liner + how it works + kill chain position
-4. Competition / deployed capability: what exists today? why is yours different? TRL comparison (table)
-5. Deployment path: how does this reach the battlefield? acquisition pathway + timeline
-6. Business model: revenue, pricing, GTM (if dual-use)
-7. Market: TAM/SAM/SOM + trends (only if commercially relevant — otherwise skip)
-8. Demo: what you'll see + key metrics
-9. Thank you
-
-Save to `artefacts/07_deck.md`. Then render via `agent.deck.render_deck()` which
-auto-detects Marp CLI, python-pptx, or HTML fallback.
-
-Panel review: each judge flags the slide they'd push back on hardest.
-Record in audit.
-```
-
-Quality rules:
-- Market figures must be sourced from web research, not invented.
-- At least 3 real competitors cited by name.
-- At least one acquisition pathway specified.
-- Deck compiled via `agent.deck.compile_deck_md()` and rendered.
-
-### Implementation steps
-
-1. Load all prior artefacts.
-2. Execute prompt template above.
-3. Write `07_market.md`, `07_competition.md`, `07_business_model.md`.
-4. Compile deck via `agent.deck.compile_deck_md()`.
-5. Render via `agent.deck.render_deck()`.
-6. Panel reviews slides.
-7. Write audit. Mark phase complete.
-
----
-
-## Phase 8 — Final review
-
-### Phase 8 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are producing the final summary. Read all artefacts from phases 0-7.
-
-Write a one-page summary covering:
-1. One-paragraph project pitch (3-4 sentences, no jargon).
-2. Top 3 differentiators (what makes this better/different/faster than alternatives).
-3. Top 3 risks (what could kill this, and why it won't).
-4. Next-48-hours action list (3-5 concrete tasks).
-
-Panel verdict: each judge gives 👍 or 👎 with one-line "what would change my mind."
-Record all verdicts, including dissents.
-
-Build `agent.summary.Summary` with `JudgeVerdict` objects and write via
-`agent.summary.write_summary()` to `artefacts/08_summary.md`.
-```
-
-Quality rules:
-- Pitch ≤4 sentences.
-- ≥1 judge dissent acknowledged (unanimous = suspicious).
-- Action list items are concrete ("Build the React dashboard with hardcoded feeds"), not vague ("Improve the demo").
-- Final deck re-rendered if Phase 7 rendering changed.
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 5 — Research: web searching top 5 ideas...`
-2. `agent.state.mark_phase_in_progress(state, 5)`. Save state.
-3. Load `04_solution_candidates.md`. Extract top 5.
-4. Execute prompt template above.
-5. Web research per idea. Print: `⚙️  Phase 5 — Research: re-scoring with panel...`
-6. Panel re-scores.
-7. Aggregate, write `05_ranked_solutions.md`.
-8. Owner validates, write `05_owner_pick.md`. Print: `✅ Phase 5 — Research: solution {id} chosen.`
-9. Record decision. `agent.mark_phase_completed(state, 5, artefacts_dir / "05_ranked_solutions.md")`. Save state.
-10. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-11. Print time.
-12. Write audit. Ask: "Approve? (y/edit/redo)".
-
----
-
-## One-Sentence Clarity
-
-Runs after Phase 5 (solution ranked). Forced moment of clarity before you
-build or plan a demo. Writes to the console — not a separate artefact.
-
-### Clarity Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are forcing the team to state their project in ONE sentence.
-
-Read `artefacts/05_owner_pick.md` for the chosen solution.
-Read `artefacts/team_profile.md` for the team's capabilities.
-
-Ask the team directly:
-
-  "In one sentence — what are you building? No jargon. Something
-  your colonel can repeat at a briefing. 20 words max."
-
-If they can't do it in 20 words, ask again. If they use jargon
-("multi-domain AI-augmented decision support framework"), say:
-
-  "That's jargon. Try again. Imagine you're explaining this to
-  a tank commander who's been awake for 36 hours."
-
-Once you have a clean one-sentence pitch, say:
-
-  "Print this. Tape it to your monitor. Everything you build in
-  the next 12 hours serves this sentence. If a task doesn't serve
-  this sentence, drop it."
-```
-
-### Implementation steps
-
-1. Print: `⚙️  One-Sentence Clarity — stating the project...`
-2. Execute prompt template above.
-3. Do NOT write a file. This is a live interactive check only.
-4. Write audit entry (record the final sentence).
-
----
-
-## Phase 6 — Demo & narrative
-
-### Phase 6 Prompt Template
-
-[unchanged prompt template]
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 6 — Demo: writing plan...`
-2. `agent.state.mark_phase_in_progress(state, 6)`. Save state.
-3. Load `05_owner_pick.md`.
-4. Execute prompt template above.
-5. Panel: previews script, gives Q&A questions.
-6. Write via `agent.demo_plan.write_demo_plan()`. Print: `✅ Phase 6 — Demo: demo plan written.`
-7. **Task assignment** — run the Task Assignment prompt. Writes `artefacts/demo_tasks.md`.
-8. `agent.mark_phase_completed(state, 6, artefacts_dir / "06_demo_plan.md")`. Save state.
-9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-10. Print time.
-11. Write audit. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Phase 7 — Deck & market research
-
-### Phase 7 Prompt Template
-
-[unchanged prompt template]
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 7 — Deck: researching market...`
-2. `agent.state.mark_phase_in_progress(state, 7)`. Save state.
-3. Load all prior artefacts.
-4. Execute prompt template above.
-5. Write `07_market.md`, `07_competition.md`, `07_business_model.md`.
-6. Print: `⚙️  Phase 7 — Deck: compiling and rendering...`
-7. Compile deck via `agent.deck.compile_deck_md()`.
-8. Render via `agent.deck.render_deck()`. Print: `✅ Phase 7 — Deck: rendered to artefacts/07_deck.html.`
-9. Panel reviews slides.
-10. `agent.mark_phase_completed(state, 7, artefacts_dir / "07_deck.md")`. Save state.
-11. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-12. Print time.
-13. Write audit. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Phase 8 — Final review
-
-### Phase 8 Prompt Template
-
-[unchanged prompt template]
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 8 — Final: writing summary...`
-2. `agent.state.mark_phase_in_progress(state, 8)`. Save state.
-3. Load all artefacts.
-4. Execute prompt template above.
-5. Write `08_summary.md` via `agent.summary.write_summary()`. Print: `✅ Phase 8 — Final: summary written.`
-6. Panel: final verdicts. Record dissent.
-7. Final deck re-render check.
-8. `agent.mark_phase_completed(state, 8, artefacts_dir / "08_summary.md")`. Save state.
-9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-10. Print time plus: `⏱  Total: {elapsed:.0f} min across 9 phases.`
-11. Write audit. Mark run complete. State: `current_phase: 9`.
-
----
-
-## Pitch Review (`/edth-agent review`)
-
-Submits a draft PDF or markdown deck to the 12-judge panel using **subagents**.
-One subagent per judge. Each judge first evaluates: "Is my expertise relevant to
-this topic?" If no, they contribute one tangential question or stay quiet. If yes,
-they ask 2-3 deeply relevant questions. Judges who stay quiet do NOT dilute the
-review with generic questions.
-
-Use this after Phase 7 or 8, before presenting. Also useful ad-hoc
-when you have a last-minute idea and want to stress-test it.
-
-### Pitch Review Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are convening the full 12-judge panel to review a pitch deck.
-The user has a draft — either an uploaded PDF, a rendered HTML
-deck, or the markdown at `artefacts/07_deck.md`.
-
-STEP 1 — Read the deck:
-Ask the user: "Share your deck PDF or point me to the markdown file."
-Read the deck content (extract text from PDF using built-in tools,
-or read the .md file directly). Save the full text as `review_deck`.
-
-STEP 2 — Dispatch subagents:
-For EACH of the 12 judges (from `judges/*.yaml`), dispatch a subagent
-with this prompt. Use `general-purpose` or `general` agent type.
-
-SUBAGENT PROMPT (one per judge):
-
-```
-You are {judge_name} ({judge_short}), {judge_background}.
-Your expertise: {judge_tags}. Your pet peeves: {judge_anti_priorities}.
-
-You are reviewing a hackathon pitch deck. Read the deck below.
-
-RELEVANCE GATE — Before you ask anything, answer honestly:
-  1. Is my expertise directly relevant to this solution's domain?
-     (yes, partially, or no)
-  2. Can I ask questions that no other judge would think to ask
-     because of my specific background?
-
-  - If BOTH answers are "no" or "partially" → STOP. Return empty.
-    "No questions — my expertise ({tags}) does not directly apply
-    to this topic ({detected_topic})." You are staying quiet because
-    generic questions dilute the review.
-
-  - If EITHER answer is "yes" → ask 2-3 questions. Go to the
-    question format below.
-
-QUESTION FORMAT (only if you passed the gate):
-  1. Quote a specific slide, claim, or number from the deck.
-  2. Ask a probing question from your expertise. NOT "this is wrong."
-     Ask "walk me through...", "what happens when...", "help me
-     understand the assumption behind...".
-  3. Explain in one line WHY you're asking — what gap you're probing.
-
-  Example (Viper, military operator, on a C-UAS deck):
-  "On slide 3 you claim 'autonomous detection with 95% accuracy.'
-  Walk me through the engagement sequence: from detection to
-  operator confirmation to kinetic effect. What happens when the
-  operator disagrees with the AI under time pressure?
-  *Why I'm asking: kill chain latency under cognitive load is what
-  separates a demo from a deployed system.*"
-
-Important: if your expertise is off-topic, staying quiet is MORE
-valuable than asking a generic question. Do not feel pressure to
-contribute. The signal-to-noise ratio matters.
-
-DECK:
-{review_deck}
-```
-
-STEP 3 — Collect results:
-After all 12 subagents return, compile:
-  - Judges who contributed questions (list with their questions).
-  - Judges who stayed quiet (list with their reasoning).
-  - Cross-cutting convergences: questions 3+ judges asked in different
-    words — these are the highest-priority gaps.
-  - Hardest question per relevant judge.
-
-Output to console AND write `artefacts/pitch_review.md`:
-
-# Pitch Review — 12-Judge Panel
-## Deck: [name]
-
-## Contributing Judges ({N} of 12)
-[Per-judge questions]
-
-## Judges Who Stayed Quiet ({M} of 12)
-[Per-judge one-line reason — e.g. "Dr. Tran (EW): topic is optical C2, not spectrum warfare."]
-
-## Cross-Cutting Convergences
-[Questions 3+ judges asked — these MUST be answered before the pitch]
-
-## Hardest Questions
-[The 2-3 questions that probe the deepest assumptions]
-
-## Signal Quality
-  - Relevant judges: {N}
-  - Questions asked: {total}
-  - Convergences: {convergence_count}
-  - Rating: [Strong signal | Adequate | Weak signal — too few relevant judges]
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Pitch Review — reading deck...`
-2. Ask user for deck (PDF, HTML, or `artefacts/07_deck.md`). Extract text.
-3. Print: `⚙️  Pitch Review — dispatching 12 judge subagents...`
-4. Load each judge YAML. Dispatch one subagent per judge. Collect results.
-5. Print: `⚙️  Pitch Review — {N} judges contributed, {M} stayed quiet.`
-6. Compile the review. Write `artefacts/pitch_review.md`.
-7. Print: `✅ Pitch review complete. {total} questions from {N} judges.`
-8. If `Signal Quality` is "Weak signal", print: `⚠️  Only {N} of 12 judges found this relevant — consider whether the problem is too narrow or the deck is missing cross-domain context.`
-9. Write audit entry.
-
----
-
-## Guided Setup (`/edth-agent setup`)
-
-Walks a new user through first-time setup. Use after `git clone` but
-before any other command.
-
-### Setup Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are onboarding a new user to the EDTH Hackathon Agent. Walk them
-through setup step by step. After each step, confirm it worked before
-moving on.
-
-Step 1 — Python environment:
-  Run: `bash setup.sh`
-  This detects the OS, installs uv, syncs deps, and runs tests.
-  If it fails, help the user debug (is Python 3.12+ installed?
-  Is the shell compatible?). Verify: `uv run pytest -q` passes.
-
-Step 2 — Pre-commit hooks:
-  Run: `uv run pre-commit install --install-hooks`
-  Explain: "This runs ruff + formatting checks on every git commit.
-  It keeps the code clean automatically."
-
-Step 3 — Exa MCP (web search):
-  If the user is on Claude Code:
-    Run: `claude mcp add --transport http exa https://mcp.exa.ai/mcp`
-    Verify: `claude mcp list` shows exa as ✓ Connected.
-  If the user is on OpenCode:
-    Tell them: "The file `opencode.json` in the project root already
-    configures Exa. OpenCode will load it automatically on next start."
-  Explain: "Exa gives the agent real web search — used for market
-  research, competitor analysis, and prior art in Phases 1, 5, and 7."
-
-Step 4 — Context7 MCP (optional, library docs):
-  Ask: "Do you want up-to-date library documentation? (y/n)"
-  If yes:
-    Guide them to sign up at https://context7.com, get their API key.
-    Run: `claude mcp add --scope user --header "CONTEXT7_API_KEY: $KEY" --transport http context7 https://mcp.context7.com/mcp`
-    Verify: `claude mcp list` shows context7 as ✓ Connected.
-  If no: "You can add it later with /edth-agent setup."
-
-Step 5 — Verify:
-  Print: "Setup complete. Next: /edth-agent dry-run to prove it works,
-  then /edth-agent team to introduce your team, then /edth-agent to
-  start the full workflow."
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Guided Setup — let's get you running.`
-2. Execute prompt template above, step by step.
-3. Write audit entry.
-
-
----
-
-## Team Discovery
-
-Before anything else. The agent must understand who is in the room
-and what they can actually deliver in 48 hours. This writes
-`artefacts/team_profile.md` — a shared memory file used throughout
-the hackathon to inform problem selection, role assignment, and
-solution scoping.
-
-### Team Discovery Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are interviewing a hackathon team before they choose a problem.
-Be blunt. Be thorough. You only have their attention for 3 minutes per person.
-This is not a job interview — they volunteered for this. Your job is to surface
-what they can ACTUALLY build in 48 hours, not what sounds impressive.
-
-IMPORTANT: Go one person at a time. Do NOT move to the next person until
-the current one has passed the word-count check.
-
-STEP 1 — Self-introduction (one person at a time):
-Ask: "Introduce yourself. What have you built before that's relevant to
-this hackathon? What skills, tools, frameworks, or domain knowledge do you
-bring? Be specific — names of projects, languages, technologies. This is a
-48-hour sprint, not a job interview. What can you actually ship?"
-
-After they respond, run `agent.team.word_count(response)`:
-  - If < 50 words: "That's a start but I need more. Specifically: what
-    have you BUILT? What languages and frameworks? What's the most impressive
-    thing you've shipped, and what was your exact role in it? Give me details."
-  - If ≥ 50 words: proceed to Step 2.
-
-STEP 2 — Quick-fire drill (5 questions, A/B/C, one at a time):
-Pick 5 questions from this bank. Adapt based on what they said in Step 1.
-Ask one at a time. They must pick A, B, or C. No hedging.
-
-Pick from:
-  1. Build speed: "You've got 48 hours. Are you: A) 'I code fast, ship
-     messy, iterate' B) 'I plan carefully, write clean code, have decent
-     velocity' C) 'I spend a lot of time thinking before I write anything'"
-  2. Stack confidence: "With your primary language/framework, are you:
-     A) 'I can build anything from scratch without docs' B) 'I'm solid,
-     need docs for the tricky stuff' C) 'I'm learning as I go and I'll
-     need help'"
-  3. Demo chops: "For the live 3-min demo: A) 'I love presenting, put me
-     on stage' B) 'I can do it if nobody else will' C) 'Please don't make
-     me present'"
-  4. Domain depth: "In the defense/military domain: A) 'I've worked on
-     defense systems before' B) 'I've read about it, comfortable with
-     the vocabulary' C) 'This is brand new to me'"
-  5. Collaboration style: "In a tight deadline: A) 'I pair program and
-     share work constantly' B) 'I prefer clear task boundaries, then
-     work solo' C) 'I need to own a feature end-to-end to do my best'"
-  6. Stress tolerance: "When things break at 3am: A) 'I debug calmly
-     and systematically' B) 'I stress a bit but push through'
-     C) 'I need someone to help me triage'"
-  7. Hardware/edge: "With physical hardware or edge devices (Jetson, RPi,
-     sensors): A) 'I've deployed to real hardware' B) 'I've tinkered
-     with it but not in production' C) 'Software-only, never touched
-     hardware'"
-  8. ML maturity: "With machine learning: A) 'I've trained and deployed
-     models to production' B) 'I've built notebooks and demos'
-     C) 'Novice / I can't contribute to ML work'"
-
-Record all 5 answers immediately after they respond.
-
-STEP 3 — Blind spot check:
-Based on their intro + quick-fire answers, identify 1-3 blind spots.
-Phrase them as observations, not insults. Examples:
-  - "You're strong on frontend but mentioned no backend or ops knowledge —
-    who handles the API if you need one?"
-  - "You said 'I can do ML' but named no specific framework or project —
-    are we talking prototype-in-a-notebook or edge-deployed model?"
-  - "You listed 4 languages — in 48 hours, which ONE do you actually ship in?"
-
-Report the blind spots to the user. Give them one chance to clarify.
-
-STEP 4 — Build the profile:
-Construct an `agent.team.MemberProfile` with:
-  - name (ask if not obvious from intro)
-  - intro (raw text)
-  - skills (list, extracted)
-  - built (list of specific projects/things they made)
-  - experience_years (if stated)
-  - self_assessment (their own framing)
-  - blind_spots (from step 3)
-  - quick_answers (dict of question → answer)
-
-STEP 5 — Repeat for next person:
-Go to Step 1 for the next team member. Do this for every person on the
-team (ask "how many of you are there?" at the start).
-
-After the last person:
-  - Ask: "Are there any skills or experience I missed that someone else
-    brings?" Let each person add anything they thought of.
-  - Summarize: the team's collective strengths and gaps.
-
-STEP 6 — Team dynamics:
-Ask the group:
-  - "Who's doing the 3-minute pitch in front of the judges?"
-  - "Who owns the live demo — the one person who makes sure it works?"
-  - "Who's building the core? If that's multiple people, how do you split?"
-  - "Who owns the deck, the market research, the business model?"
-
-Record in `agent.team.TeamDynamics`. If multiple people volunteer for the
-same role, let them decide — your job is to surface the conversation,
-not to arbitrate (unless they're clearly stuck).
-
-STEP 7 — Write the profile:
-Build an `agent.team.TeamProfile` and call
-`agent.team.write_team_profile(artefacts_dir, profile)`.
-Output goes to `artefacts/team_profile.md`.
-
-Tell the user: "Team profile saved to `artefacts/team_profile.md`.
-This will inform every phase — problem selection, scoping, and who
-does what. Re-run `/edth-agent team` if the team changes."
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Team Discovery — interviewing the team...`
-2. Ask how many team members, then go person by person using the prompt template.
-3. For each person: intro → word count check (≥50, ask for more if <50) → 5 quick-fire A/B/C → blind spots → profile.
-4. After all members: team dynamics (pitcher, demo, builder, deck).
-5. Write via `agent.team.write_team_profile()`.
-6. Print: `✅ Team profile saved to artefacts/team_profile.md.`
-7. Write audit entry.
-
----
-
-## Phase 0 — Onboarding
-
-### Phase 0 Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are onboarding a hackathon team. Capture the context that will drive
-every subsequent phase. Load the default context via
-`agent.context.default_context()` and `agent.state.load_state()`.
-
-Present these questions to the user, one group at a time:
-
-1. HACKATHON:
-   - Hackathon name? (default: EDTH Munich 2025)
-   - Theme / focus? (default: Defense tech / dual-use)
-   - Tracks your team is competing in? (default: C-UAS, Autonomy, EW, UUV, USV)
-   - Judge rubric weights? (default: impact 0.30, innovation 0.25, execution 0.25, presentation 0.20)
-
-2. TEAM:
-   - How many people?
-   - Collective strengths? (e.g. ML/CV, frontend, signal processing)
-   - Collective weaknesses / gaps? (e.g. hardware, maritime domain)
-
-3. CONSTRAINTS:
-   - Time budget in hours? (default: 48)
-   - Deliverable scope? (default: deck + thin demo)
-
-4. AGENT CONFIG:
-   - Owner mode: real (you answer) or sim (persona role-plays)?
-   - Persona to use? (default: edth-judge)
-   - Panel mode: expanded (separate LLM per judge, higher quality) or condensed (single LLM, faster)?
-   - Aggregation mode: borda (weighted ranking) or approval (top-K voting)?
-
-After capturing answers, merge them into the default context via
-`agent.context.save_context(artefacts_dir, ctx)`.
-If the user is in a hurry, accept all defaults with one confirmation.
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Phase 0 — Onboarding: loading defaults...`
-2. `agent.state.mark_phase_in_progress(state, 0)`. Save state.
-3. Read or create `artefacts/state.json` via `agent.state.load_state()`.
-4. Load default context via `agent.context.default_context()`.
-5. Execute Phase 0 prompt template above.
-6. Save via `agent.context.save_context(artefacts_dir, ctx)`.
-7. Print: `✅ Phase 0 — Onboarding: context saved.`
-8. `agent.mark_phase_completed(state, 0, artefacts_dir / "00_context.yaml")`. Save state.
-9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-10. Print time: `⏱  {elapsed:.0f} min elapsed, {remaining} phases remaining.`
-11. Write audit. Mark phase complete.
-12. Ask: "Approve? (y/edit/redo)" (real mode) or auto-continue (sim).
-
----
+Read `references/judges.md` for the full judge prompt templates.
+Commands: `/edth-agent judge add | edit | remove | reset | list | panel generate`.
+Python: `agent.judges.add_judge() | update_judge() | remove_judge() | list_judges_full()`.
 
 ## Dry-run mode
 
-When user types `/edth-agent dry-run`:
-
-1. Print: `⚙️  Dry-run: starting with sim owner + condensed panel...`
-2. `agent.state.empty_state()` — fresh state.
-3. Set `owner_mode: sim`, `persona: edth-judge`, `panel_mode: condensed`.
-4. Phase 0: auto-accept default context. **BAIL if** `00_context.yaml` not written.
-5. Phase 1: Parse CSV. **BAIL if** `01_problems.json` is empty or parsing fails. Print progress per substep. **BAIL if** `01_triage.md` has <2 clusters — warn user the CSV may be misconfigured.
-6. Auto-pick problem #1. Phase 2 in sim (persona answers). **BAIL if** `02_candidate_problem.md` missing or empty.
-7. Auto-pick panel. Phase 3: decompose + auto-pick sub-problem #1.
-8. Phase 4: ideation, auto-top-5. **BAIL if** <5 ideas survive dedup — warn user.
-9. Phase 5: research + rank, persona picks #1.
-10. Phase 6: demo plan + task assignment.
-11. Phase 7: deck + market + render.
-12. Print: `✅ Dry-run complete. Deck: artefacts/07_deck.html.`
-13. Run `agent.validate.run_validation(artefacts_dir, quiet=False)`.
-14. Print: "Start over with real data? `/edth-agent reset` then `/edth-agent run`."
+1. `⚙️  Dry-run: starting with sim owner + condensed panel...`
+2. Fresh state via `agent.state.empty_state()`. Set `owner_mode: sim`, `panel_mode: condensed`.
+3. Phase 0 through 7 auto-executed. **BAIL at** parse failure, <2 clusters, <5 ideas.
+4. `✅ Dry-run complete. Deck: artefacts/07_deck.html.`
+5. Validate. Print: "Start over? `/edth-agent reset` then `/edth-agent run`."
 
 ## Skip-to mode
 
-When user types `/edth-agent skip-to <N>`:
-
-1. Print: `⚙️  Skip-to: generating stub artefacts for phases 0 to {N-1}...`
-2. Run `agent.state.empty_state()` for a fresh state.
-3. For phases 0..N-1, generate minimal stub artefacts:
-   - Phase 0: `agent.context.save_context(artefacts_dir, agent.context.default_context())`.
-   - Phase 1: Parse the configured CSV, write all problems as one cluster. Use default scores (3.0 for all axes). Mark `[STUB]` in the cluster name.
-   - Phase 2: Pick problem #1. Generate 3 Q&A pairs with `[STUB ANSWER]`. Write chosen.
-   - Phase 3: Decompose into 3 sub-problems. Pick #1. Use mid-range scores (3.0). Mark `[STUB]`.
-   - Phase 4: Generate 5 generic ideas. Pick #1 at rating 3.0. Mark `[STUB]`.
-   - Phase 5: Research stubs: "Web research skipped (stub)." Pick #1 at score 3.0. Mark `[STUB]`.
-   - Phase 6: Generate a minimal demo plan stub. Task assignment: `[STUB — re-run after real phases fill in].
-4. Each stub phase: `agent.state.mark_phase_completed(state, p, artefacts_dir / stub_path)`.
-5. Set `current_phase = N`. Save state.
-6. Print: `✅ Stubs generated for phases 0–{N-1}. Ready for phase {N}. Run /edth-agent run.`
-7. Print: "⚠️  Stub artefacts are marked [STUB]. Replace them by re-running `/edth-agent rerun <N>` with real data."
-
-## Rerun command
-
-When user types `/edth-agent rerun <N>`:
-
-1. If the artefact for phase N already exists, snapshot it: copy to `artefacts/snapshots/<filename>.bak.<timestamp>`.
-2. Print: "Previous version saved to `artefacts/snapshots/`."
-3. Run the phase implementation steps as normal (mark_phase_in_progress → execute prompt → write → mark_phase_completed → validate → time).
-
----
+1. `⚙️  Skip-to: generating stub artefacts for phases 0 to {N-1}...`
+2. Fresh state. Generate minimal stubs for each phase 0..N-1. Mark `[STUB]`.
+3. All stubs: `mark_phase_completed(state, p, stub_path)`. Set `current_phase = N`.
+4. `✅ Stubs generated. Ready for phase {N}.`
+5. `⚠️  Stubs are marked [STUB]. Replace with real data via /edth-agent rerun <N>.`
 
 ## Validate command
 
-When user types `/edth-agent validate` (or `--quiet`):
-
-Run `agent.validate.run_validation(artefacts_dir, quiet=True/False)`. This checks:
-
-1. `state.json` exists, is valid JSON, has all required keys, `current_phase` is within 0-9.
-2. Each completed phase has its artefact file present and non-empty.
-3. `01_triage.md` has ≥2 clusters with scores.
-4. `02_candidate_problem.md` has ≥2 candidates.
-5. `03_chosen_sub_problem.md` has ≥3 sub-problems with ROI scores.
-6. `04_solution_candidates.md` has ≥5 ideas with ratings.
-7. `05_ranked_solutions.md` has ≥1 solution with research content.
-8. `05_owner_pick.md` exists and references a valid idea_id.
-9. `06_demo_plan.md` has a script with ≥5 timed beats.
-10. `07_deck.md` exists and has ≥3 slides (count `---` separators).
-11. `07_market.md`, `07_competition.md`, `07_business_model.md` exist and non-empty.
-12. `08_summary.md` exists and has a pitch section AND panel verdicts.
-13. If panel is locked, `state.json` `panel.auto_selected` has 3-5 entries.
-14. If decisions exist in state, they reference valid problem/sub/solution IDs present in the artefacts.
-
-Report results:
-- If all pass: "✅ All {N} checks passed."
-- If issues found: "⚠️ {N} issue(s):" with file-specific messages.
-- Quiet mode: only output if issues found.
-
----
-
-## Linting & quality
-
-- **Ruff** — fast Python linter + formatter (Rust, ~0.01s). Run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` to auto-fix.
-- **Pre-commit hooks** — run `uv run pre-commit install --install-hooks` once. After that, ruff + end-of-file-fixer + trailing-whitespace + merge-conflict check run automatically on every `git commit`.
-
-When you create or modify Python code, the agent automatically runs ruff before continuing. If ruff finds unfixable issues, it will report them.
+Run `agent.validate.run_validation(artefacts_dir, quiet=True/False)`. Checks:
+state.json integrity, artefact presence + size, content quality (cluster count,
+slide count, research sections, html keyboard nav), panel consistency,
+cross-phase decision tracking. Prints `✅ All {N} checks passed.` or `⚠️  {N} issue(s):`

@@ -51,19 +51,11 @@ bash setup.sh   # auto-detects macOS/Linux/Windows — installs uv, syncs deps, 
 
 **OpenCode:** Done. The agent auto-discovers from `.opencode/skills/`. MCP tools (Exa + Context7) load from `opencode.json`.
 
-**Claude Code:** 
-```bash
-claude mcp add --transport http exa https://mcp.exa.ai/mcp
-claude mcp add --scope user --header "CONTEXT7_API_KEY: $CONTEXT7_API_KEY" --transport http context7 https://mcp.context7.com/mcp
-# Then: claude
-```
-Both auto-discover the skill from `.claude/skills/edth-agent/`. The first invocation auto-checks that `uv run python -c "import agent"` works.
+**Claude Code:** Done. The agent auto-discovers from `.claude/skills/`. MCP servers load from `.mcp.json`. Or install via `/edth-agent setup`.
 
-**Or set up Exa directly from the agent:**
-```
-/edth-agent setup
-```
-This walks you through: `uv sync`, pre-commit hooks, and `claude mcp add exa` in one flow.
+**Gemini CLI:** Done. The agent auto-discovers from `.agents/skills/` (Agent Skills standard). GEMINI.md provides workspace context.
+
+**Both auto-discover** the skill when you `cd` into the repo. The first invocation auto-checks that `uv run python -c "import agent"` works.
 
 ### 4. Optional: Context7 API key (higher rate limits)
 

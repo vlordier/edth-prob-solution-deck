@@ -129,22 +129,66 @@ def test_skill_md_has_required_sections() -> None:
     required = [
         "## Behavior rules",
         "## Commands",
-        "## Phase 1 — Triage",
-        "## Phase 2 — Elicit",
-        "## Phase 3 — Sub-problem",
-        "## Phase 4 — Divergent ideation",
-        "## Phase 5 — Research",
-        "## Phase 6 — Demo",
-        "## Phase 7 — Deck",
-        "## Phase 8 — Final",
-        "## Phase 0 — Onboarding",
+        "## Phases (0–8)",
+        "## Panel system",
+        "## MCP tools",
+        "## Per-Phase Execution",
+        "### Phase 0 — Onboarding",
+        "### Phase 1 — Triage",
+        "### Phase 2 — Elicit",
+        "### Phase 3 — Sub-problem",
+        "### Phase 4 — Divergent ideation",
+        "### Phase 5 — Research",
+        "### Phase 6 — Demo",
+        "### Phase 7 — Deck",
+        "### Phase 8 — Final",
+        "## Special Commands",
         "## Team Discovery",
+        "## Question Sheet",
+        "## Pitch Review",
+        "## Guided Setup",
+        "## Judge Management",
         "## Dry-run mode",
         "## Skip-to mode",
         "## Validate command",
-        "## Kill Chain Mapping",
-        "## One-Sentence Clarity",
-        "## MCP tools",
     ]
     for section in required:
         assert section in content, f"SKILL.md missing section: {section}"
+
+
+def test_all_reference_files_exist() -> None:
+    """All reference prompt files referenced in SKILL.md must exist."""
+    refs_dir = Path(__file__).parent.parent / "references"
+    expected = [
+        "prompts/phase-0.md",
+        "prompts/phase-1.md",
+        "prompts/phase-2.md",
+        "prompts/phase-3.md",
+        "prompts/phase-4.md",
+        "prompts/phase-5.md",
+        "prompts/phase-6.md",
+        "prompts/phase-7.md",
+        "prompts/phase-8.md",
+        "prompts/team-discovery.md",
+        "prompts/sheet.md",
+        "prompts/task-assignment.md",
+        "prompts/kill-chain.md",
+        "prompts/clarity.md",
+        "prompts/review.md",
+        "prompts/setup.md",
+        "judges.md",
+    ]
+    for path in expected:
+        full = refs_dir / path
+        assert full.exists(), f"Missing reference file: references/{path}"
+        assert full.stat().st_size > 0, f"Empty reference file: references/{path}"
+
+
+def test_skill_md_is_under_500_lines() -> None:
+    """SKILL.md body should be under 500 lines per skill best practices."""
+    path = _find_skill_md()
+    line_count = len(path.read_text().split("\n"))
+    assert line_count <= 500, (
+        f"SKILL.md is {line_count} lines (limit: 500). "
+        f"Move content to references/ to keep the spine lean."
+    )
