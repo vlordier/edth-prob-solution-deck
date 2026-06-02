@@ -97,3 +97,24 @@ def test_lock_panel_records_judges() -> None:
     assert out["panel"]["auto_selected"] == ["mehta", "viper"]
     assert out["panel"]["locked"] is True
     assert out["panel"]["manually_overridden"] is True
+
+
+def test_set_config_unknown_key_raises_key_error() -> None:
+    state = empty_state()
+    import pytest
+    with pytest.raises(KeyError, match="nope"):
+        set_config(state, nope="value")
+
+
+def test_set_decision_unknown_key_raises_key_error() -> None:
+    state = empty_state()
+    import pytest
+    with pytest.raises(KeyError, match="nope"):
+        set_decision(state, "nope", "value")
+
+
+def test_mark_phase_completed_guards_against_phase_9() -> None:
+    state = empty_state()
+    updated = mark_phase_completed(state, 8, Path("unused.md"))
+    assert updated["current_phase"] == 9
+    assert updated["phases"]["8"]["status"] == "completed"
