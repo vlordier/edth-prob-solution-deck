@@ -227,14 +227,24 @@ Read `references/prompts/phase-4.md`, then:
 
 Read `references/prompts/phase-5.md`, then:
 
-1. `⚙️  Phase 5 — Research: web searching top 5 ideas...`
+1. `⚙️  Phase 5 — Research: Salvo 1 — broad surface search...`
 2. `mark_phase_in_progress(state, 5)`. Save state.
-3. Load `04_solution_candidates.md`. Extract top 5. Execute prompt.
-4. Web research per idea. Panel re-scores.
-5. Aggregate, write `05_ranked_solutions.md`.
-6. Owner validates, write `05_owner_pick.md`. `✅ Phase 5 — Research: solution {id} chosen.`
-7. Record decision. `mark_phase_completed(state, 5, artefacts_dir / "05_ranked_solutions.md")`. Save state.
-8. Validate, time + timebox, audit, approve.
+3. Load `04_solution_candidates.md`. Extract top 5.
+4. Execute prompt: generate 3-4 queries per idea, run Salvo 1, write briefs.
+5. `⚙️  Phase 5 — Research: Critique — evaluating Salvo 1 gaps...`
+6. Execute critique: what surprised you, what's missing, what's questionable.
+7. `⚙️  Phase 5 — Research: Salvo 2 — deep adversarial search...`
+8. Execute Salvo 2: follow-up queries based on gaps, counter-evidence search.
+9. `⚙️  Phase 5 — Research: Synthesis — cross-referencing both salvos...`
+10. Execute synthesis: convergent/divergent findings, risk-adjusted TRL.
+11. `⚙️  Phase 5 — Research: presenting findings to user...`
+12. Present research summary with 4 questions to the user. Capture corrections.
+13. If user provides new leads, run targeted Salvo 3 searches. Correct in place.
+14. Panel re-scores. Aggregate via `weighted_borda()`.
+15. Write `05_ranked_solutions.md` + `05_owner_pick.md`.
+16. `✅ Phase 5 — Research: solution {id} chosen ({N} search queries across {S} salvos).`
+17. Record decision. `mark_phase_completed(state, 5, ...)`. Save state.
+18. Validate, time + timebox, audit, approve.
 
 #### One-Sentence Clarity
 
