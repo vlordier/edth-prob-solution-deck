@@ -1,6 +1,10 @@
 ---
 name: edth-agent
-description: Turn a CSV of problem statements into a winning pitch deck — problem selection, Mom Test elicitation, 12-judge validation, solution ideation, ranking, and deck generation.
+description: >
+  Turn a CSV of problem statements into a winning pitch deck — problem selection,
+  Mom Test elicitation, 12-judge validation, solution ideation, ranking, and deck
+  generation. Subcommands: team, dry-run, run, validate, panel, sheet, skip-to,
+  render, reset, status, help.
 ---
 
 # EDTH Hackathon Agent

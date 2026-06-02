@@ -47,10 +47,10 @@ In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models`
 ```bash
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
 cd edth-prob-solution-deck
-opencode
+opencode          # or: claude
 ```
 
-The agent is an OpenCode skill — OpenCode discovers it automatically from `.opencode/skills/` when you open the repo directory. The first time you invoke `/edth-agent`, it auto-installs uv + Python deps.
+The agent is an Agent Skills-compatible skill — OpenCode and Claude Code both discover it automatically from `.opencode/skills/` and `.claude/skills/`. The first time you invoke `/edth-agent`, it auto-installs uv + Python deps.
 
 ## Your own CSV
 
@@ -66,7 +66,7 @@ save_context(Path('artefacts'), ctx)
 
 ## Run
 
-All commands in OpenCode chat:
+All commands in OpenCode or Claude Code chat:
 
 | Command | Does |
 |---|---|
