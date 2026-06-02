@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# Generated artefacts
+artefacts/audit/
+artefacts/07_deck.pdf
+artefacts/07_deck.html
+examples/sample-run/artefacts/audit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local config
+.env
+.env.local
