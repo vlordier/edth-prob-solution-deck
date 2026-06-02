@@ -1,0 +1,123 @@
+Name,Problem statement
+A machine vision system that can capture aerial targets,Minimize the pilot's participation in intercepting enemy drones and increase the percentage of successful hits
+Automatic capture of Shaheds ,Minimize the pilot's participation in intercepting enemy drones and increase the percentage of successful hits
+Autonomous Underwater Navigation Systems,"Modern UUVs typically rely on periodic position updates by surfacing to connect with GNSS or Starlink, which can compromise stealth and reduce efficiency. The challenge here is to develop innovative approaches for truly autonomous underwater navigation that allows precise delivery of payloads to destination points without surfacing. Communication methods are secondary; the primary goal is reliable, accurate underwater navigation."
+Challenges in Electronic Warfare: Detecting Radar Systems,"Radar systems send out electromagnetic waves and listen to the reflected waves to scan their environment. We therefore refer to such systems as “emitters”. The waves sent out by emitters can be analyzed to obtain information about the emitters themselves. This is done by receiving the waves and analyzing them.
+In a scenario where we are moving, one of the (many) challenges faced when analyzing received signals is to find the precise geolocation of emitters and track them over time.
+We therefore propose the hackathon challenge for EDTH Munich 2025, with the following sub-challenges, to be completed by teams of up to 5 hackers:
+main challenge:
+- geolocation of emitters
+- tracking of emitters
+Support challenge: Visualization of the analysis
+We provide synthetic data in three sets, two for training and one for evaluation.
+Note: The data is (highly) synthetic and solely for the hackathon."
+Countermeasure Systems for Airborne Threats to Kamikaze USVs,"With helicopters and other low-flying aircraft emerging as significant threats to kamikaze USVs, this challenge focuses on developing countermeasures to protect USVs from airborne attacks. Participants are invited to design systems that can detect, track, and respond to air targets, ensuring the USV’s mission success even in the presence of such threats"
+Radio mesh management,Strategic positioning of radio relays in 2D or 3D to extend radio mesh range
+UGV localization from aerial images and local sensing,Combine aerial images (satellite/drone images) with UGV onboard sensors to estimate global localization
+Underwater Vision and Environmental Scanning,"Designing an underwater reconnaissance system that combines computer vision with echo-scanning technology can enable UUVs to navigate, detect, and avoid underwater obstacles autonomously. This system should function effectively in low-visibility and varying depth conditions."
+Allow parallel take-off and landing under limited communication in constrained spaces,Be able to take off and land in limited space as fast as possible and with constrained communication. The algorithm must ensure collision free take-off and landing under all circumstances. Allow faster take-off and landings with minimal user input. Also extendable to drone-port.
+Automatic capture of enemy reconnaissance drones using laser guidance,Minimize the pilot's participation in intercepting enemy drones and increase the percentage of successful hits
+Automatic capture of enemy reconnaissance drones using optical guidance,Minimize the pilot's participation in intercepting enemy drones and increase the percentage of successful hits
+Autonomy 1,"AI Decision Support Systems
+
+Challenge: Multi-Domain Battle Management Interface
+Objective: Create an intuitive commander's dashboard that processes multi-domain data and provides actionable insights.
+
+Requirements:
+- Process simulated feeds from air, land, and naval assets
+- Prioritize threats using AI
+- Generate course-of-action recommendations
+- Display critical information within 3 seconds"
+Autonomy 2,"Autonomous Navigation
+
+Challenge: GPS-Denied Swarm Coordination
+Objective: Develop a distributed algorithm for UAV swarm navigation without GPS.
+
+Requirements:
+- Coordinate 5+ UAVs and/or 5+ UGVs simultaneously
+- Maintain formation in a simulated urban environment
+- Avoid collisions and obstacles
+- Operate with local communication only"
+Autonomy 3,"Sensor Fusion
+
+Challenge: Real-Time Battlefield Analysis
+Objective: Create a system that combines data from multiple sensor types to identify and track targets.
+
+
+Requirements:
+- Fuse data from radar, infrared, and optical sensors
+- Filter false positives
+- Track multiple targets simultaneously
+- Generate confidence scores for detections"
+Autonomy 4,"Mobile Computing
+
+Challenge: Tactical Edge Computing
+Objective: Develop a lightweight ML model for object detection optimised for mobile devices.
+
+
+Requirements: 
+- Run on provided low-power hardware
+- Process video at 15+ FPS
+- Identify 10 types of military vehicles
+- Operate for 8+ hours on battery power
+"
+Autonomy 5,"Capability to counter enemy precision-guided munitions (such as Shahed-136 UAVs, cruise missiles, and guided aerial bombs with planning systems).
+"
+Autonomy 6,Interactive omni media communication platform with comprehensive Scene Understanding Through Multi-Source Video Integration and AI Analysis
+C-UAS 1,"Capability for situational awareness and management based on artificial intelligence using the electromagnetic spectrum to detect enemy electronic warfare (EW) systems and UAVs, ensuring the operational control of friendly EW systems, creating favorable conditions for the operation of friendly UAVs, and implementing ""friend-or-foe"" recognition on the battlefield."
+C-UAS 2,"Capability to manage combat swarms in multi-domain operations, providing essential functions such as reconnaissance, combat engagement, navigation, and communication."
+C-UAS EW 1,"Automation detection, direction finding and tracking of FPV and anonymized commercial drones:
+
+- Development of an automatic and autonomous video detection and interception capability in the wide band 200 MHz-6100 MHz to work in a network of similar capabilities
+- To triangulate drones (or at least direction finding) from detected and intercepted video and provide automatic target tracking
+- Perform triangulation of anonymized commercial drones (or at least direction finding) and provide automatic target tracking
+- If the participants have two separate means - one means of detection and the other means of suppression, then interact between them through the SAPIENT protocol
+"
+C-UAS EW 2,"High-Speed Vision Processing
+Challenge: Real-Time Optical Flow Estimation
+Objective: Develop an algorithm that accurately estimates UAV motion from video stream speeds exceeding 400 km/h.
+Requirements:
+- Process 4K video at minimum 30 FPS
+- Maintain accuracy within 5% error margin at speeds up to 400 km/h
+- Handle varying lighting conditions (dawn to dusk)
+- Execute on provided edge computing hardware
+"
+Combat drone swarms,Deployment strategies for drones for missions with longer ranges. (Not bigger/better battery solutions)
+Counter ATGMs,Find the solution to deviate the ATGMs flight course to increase the battletank survivability (soft-kill solution)
+Counter ground based robots and drones,Detection of systems with a low thermal or RF emission profile
+Counter UAV for ISR drone,"counter incoming drone. ISR drone Self Defence. FPV that targets ISR drone become a new trend, so we are seeking for lightweight solution that could be integrated with ISR drone to counter FPV"
+Counter-GAB,Systems which combat drone swarms and protect high value assets
+"Data Routing and Communication Optimization for Drone Groups
+",Adaptation of existing engineering solutions for data routing via radio path and ensuring simultaneous control of drone groups from one ground station / aerial repeater
+Cheap radar,"Design short-range (500-1000m) cheap (<$1,000) radar at high accuracy for drone detection"
+Detecting low thermal profile/Low RF profile drones and systems,"Prevent and block the operation of commercial drones that are mostly in use on the frontline (including those that have undergone reflashing or other improvements) by cyber-impacting or influencing control protocols and UAV components:
+-To cyber-impact UAVs or UAV components to prevent or block the operation of commercial DJI Mavic 3 and Autel EVO Max 4T drones.
+-To attack/influence the UAV control and video signal transmission protocols to prevent or interfere with the operation of DJI Mavic 3 and Autel EVO Max 4T drones.
+- Reverse engineer the firmware and military firmware (type 1001) on the DJI Mavic 3.
+- Modify the military firmware (type 1001) on DJI Mavic 3 to solve the problems of covert identification of the UAV.
+- Decode the control protocol of the DJI Mavic 3 or Autel 4T.
+"
+"Detection of icing conditions with temp and humidity sensors and uCs
+","Since UAV's operate in different conditions, we need reliable way to access status of UAV Icing."
+DJI Mavic 3 and Autel EVO Max 4T,To cyber-influence UAVs or UAV components in order to disable or interfere with the operation of commercial drones DJI Mavic 3 and Autel EVO Max 4T.
+Efficient Search Algorithms for Drone Swarms,Find all targets in minimal amount of time using 5 Recon drones
+EW,Capability for intelligence gathering and awareness of enemy EW and air defense systems to plan fire missions to operational and strategic depth within enemy territory.
+EW,⁠⁠Capability to protect lightly armored and armored vehicles from UAVs and enemy anti-tank guided missiles.
+Long range deployment strategy,Systems for detecting and countering ground based drones and robots
+Marker detection with Raspberry PIs and webcams for precision landing,To enable Automatic landing to prevent risk for operating personel.
+Multi-Drone Control Interface Development,Software and interfaces that enable simultaneous control of a group of drones by one operator
+"Optical detection , combining Optical and Acoustic",Senor fustion and Acoustic and Visual recognition. Current gen UAVs have at least 2 communication channels. The solution that could help blend them to make decisions will be crucial.
+Optical detection for drones,"Copter is approaching camera in varying background conditions (sky, cloud, terrain). Detect as early and reliably as possible. FPVs are attacking ISR. We need to detect and respond"
+Optical Target ReID for drone,"After a tracked object gets out the screen for a certain a amount of time, re-detect the object when it appears again preserving the same assigned ID. Several drones might also be able to know that they are looking at the same object. Improve usability of the ISR  swarm by providing stable unique IDs to detected targets."
+Real-Time Obstacle Detection Algorithms,"Develop machine learning algorithms that can process sonar and video data in real-time, enabling quick response to uncharted obstacles or sudden environmental changes."
+Resilient USV Hull Designs for Harsh Conditions,"USVs often operate in harsh marine conditions, wear, tear or damage from helicopters. This challenge invites participants to design a durable, impact-resistant, and lightweight hull that can withstand rough waters, strikes and collisions, potentially using novel materials or structural designs."
+Swarm Coordination for Collaborative Missions,"In applications like search and rescue, environmental monitoring, or defense, multiple USVs working together can cover more area and achieve complex objectives. The challenge is to design a coordination system that allows a swarm of USVs to operate collaboratively, sharing data and tasks efficiently."
+Towed Communication Antennas for UUV,"Submarines often use long, towed antennas to maintain low-frequency communication without surfacing. This challenge seeks theoretical and practical insights into adapting these antennas for UUVs, focusing on maintaining a balance between effective communication and minimal drag. Design retractable or modular towed antennas that can deploy or stow based on the mission's communication needs and depth constraints."
+UX concepts for multi UAV control,Create prototype/mockup for efficiently controlling groups / swarms of drones/ how to present it to operator in way optimal to make decisionsю. Improve usability of the ISR  swarm by providing stable unique IDs to detected targets.
+Biomimetic Navigation,"Explore bio-inspired navigation systems, potentially leveraging underwater environmental cues such as magnetic fields, similar to how some marine animals navigate. Participants could develop algorithms for UUVs to mimic these natural navigational techniques."
+Carrier Drones,Find the solution for precise low altitude flights for drone carriers to complete Reach-Deploy-Return missions with high chance of carrier survivability
+"Energy Harvesting for USV Endurance
+","For long-duration missions, USVs require sustainable energy sources. The challenge here is to design innovative energy-harvesting systems that utilize ocean waves, solar power, or other renewable sources to extend USV operational time without human intervention."
+Self-Powered Propulsion Systems for UUV,"Some UUVs have started to explore self-powered propulsion to extend their operational range, harnessing energy from water currents, pressure differences, or chemical reactions. The challenge here is to investigate practical implementations of these mechanisms to maximize endurance and efficiency. Research methods for UUVs to generate power by moving between thermal layers in the ocean, using temperature differentials to create energy."
+SLAM (Simultaneous Localization and Mapping) under the Sea,"Develop SLAM technologies customized for underwater environments, incorporating sparse mapping data to allow UUVs to continuously self-localize and map surroundings."
+Stealth Materials for UUV,"A significant challenge is developing stealth materials for UUVs that avoid detection by conventional underwater reconnaissance systems, including sonars and submarines. These materials need to maintain stealth properties while withstanding the high pressures encountered underwater."
