@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -16,8 +23,17 @@ class RankedSolution:
     spread: float = 0.0
 
 
+def _safe_score(score: float) -> float:
+    """Coerce NaN/inf to 0.0 so sorting is stable."""
+    if math.isnan(score) or math.isinf(score):
+        return 0.0
+    return score
+
+
 def write_ranked_solutions(artefacts_dir: Path, solutions: list[RankedSolution]) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
+    # Normalise scores for stable sort
+    for s in solutions:
+        s.aggregate_score = _safe_score(s.aggregate_score)
     sorted_sols = sorted(solutions, key=lambda s: -s.aggregate_score)
     lines = ["# Ranked Solutions (post-research)", ""]
     for i, s in enumerate(sorted_sols, start=1):
@@ -37,9 +53,7 @@ def write_ranked_solutions(artefacts_dir: Path, solutions: list[RankedSolution])
             lines.append("**Research:**")
             lines.append(s.research)
             lines.append("")
-    path = artefacts_dir / "05_ranked_solutions.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.RANKED_SOLUTIONS, lines)
 
 
 def write_owner_pick(
@@ -49,7 +63,6 @@ def write_owner_pick(
     dissents: list[tuple[str, str]] | None = None,
 ) -> Path:
     dissents = dissents or []
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Owner Pick (validated)",
         "",
@@ -63,9 +76,11 @@ def write_owner_pick(
     if dissents:
         lines.append("## Dissents")
         lines.append("")
-        for judge, reason in dissents:
+        for entry in dissents:
+            if len(entry) != 2:
+                log.warning("Skipping malformed dissent entry: %r", entry)
+                continue
+            judge, reason = entry
             lines.append(f"- **{judge}**: {reason}")
         lines.append("")
-    path = artefacts_dir / "05_owner_pick.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.OWNER_PICK, lines)

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import yaml
 
+from agent._util import jaccard_similarity
 from agent.judge_schema import Judge, JudgeValidationError, validate_judge
 
 log = logging.getLogger(__name__)
@@ -167,12 +168,6 @@ def list_judges_full(judges_dir: Path) -> list[dict]:
     return out
 
 
-def _jaccard(a: set[str], b: set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
-
-
 def select_panel(
     judges_dir: Path, themes: list[str], tags: list[str], *, panel_size: int = 5
 ) -> list[Judge]:
@@ -182,7 +177,7 @@ def select_panel(
         return []
     problem_set = set(themes) | set(tags)
     scored = sorted(
-        [(_jaccard(problem_set, set(j.get("tags", []))), j) for j in library],
+        [(jaccard_similarity(problem_set, set(j.get("tags", []))), j) for j in library],
         key=lambda x: (-x[0], x[1]["short"]),
     )
     must_have: list[str] = []

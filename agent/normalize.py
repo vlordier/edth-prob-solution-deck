@@ -5,6 +5,8 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TypedDict
 
+from agent._models import Problem
+
 
 class QualityFlag(StrEnum):
     VAGUE = "vague"
@@ -42,7 +44,7 @@ class ProblemWithFlags(TypedDict, total=False):
     quality_flags: list[str]
 
 
-def assign_quality_flags(problem: dict) -> list[QualityFlag]:
+def assign_quality_flags(problem: Problem) -> list[QualityFlag]:
     """Inspect a problem dict and return a list of quality flags."""
     flags: list[QualityFlag] = []
     text = f"{problem.get('name', '')} {problem.get('problem', '')}".lower()
@@ -62,7 +64,7 @@ def _is_multi_problem(text: str) -> bool:
     return matches >= 2
 
 
-def dedupe_problems(problems: list[dict]) -> list[dict]:
+def dedupe_problems(problems: list[Problem]) -> list[Problem]:
     """Remove duplicates by source_hash, keeping the first occurrence."""
     seen: set[str] = set()
     out: list[dict] = []

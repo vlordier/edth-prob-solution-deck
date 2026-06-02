@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
 from agent.rubric import DEFAULT_RUBRIC, score_to_weighted
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -25,10 +30,16 @@ class TriageReport:
 
 
 def write_triage_report(artefacts_dir: Path, report: TriageReport) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines: list[str] = ["# Triage Report", ""]
     for i, cluster in enumerate(report.clusters, start=1):
-        weighted = score_to_weighted(cluster.scores, DEFAULT_RUBRIC)
+        try:
+            weighted = score_to_weighted(cluster.scores, DEFAULT_RUBRIC)
+        except KeyError:
+            log.warning(
+                "Cluster '%s': missing rubric axes in scores — weighted total set to 0",
+                cluster.name,
+            )
+            weighted = 0.0
         lines.append(f"## Cluster {i}: {cluster.name}")
         lines.append("")
         if cluster.themes:
@@ -56,6 +67,4 @@ def write_triage_report(artefacts_dir: Path, report: TriageReport) -> Path:
         lines.append("")
         lines.append(report.notes)
         lines.append("")
-    path = artefacts_dir / "01_triage.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.TRIAGE, lines)

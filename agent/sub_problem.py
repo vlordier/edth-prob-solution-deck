@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 ROI_WEIGHTS = {"impact": 0.30, "time_fit": 0.30, "demo_ability": 0.25, "dependency_risk": 0.15}
 
@@ -16,13 +22,18 @@ class SubProblem:
     description: str = ""
 
     def roi_score(self) -> float:
+        """Weighted ROI score clamped to [1.0, 5.0].
+
+        dependency_risk is inverted (higher risk = lower score).
+        Missing weight axes default to 0.0 contribution.
+        """
         s = dict(self.scores)
-        s["dependency_risk"] = max(1.0, min(5.0, 5.0 - s.get("dependency_risk", 3.0)))
-        return sum(s[k] * w for k, w in ROI_WEIGHTS.items())
+        dep = s.get("dependency_risk", 3.0)
+        s["dependency_risk"] = max(1.0, min(5.0, 5.0 - dep))
+        return sum(s.get(k, 0.0) * w for k, w in ROI_WEIGHTS.items())
 
 
 def write_sub_problem(artefacts_dir: Path, sub_problems: list[SubProblem]) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = ["# Sub-problem decomposition", ""]
     for sp in sub_problems:
         lines.append(f"## {sp.id}: {sp.title}")
@@ -36,6 +47,4 @@ def write_sub_problem(artefacts_dir: Path, sub_problems: list[SubProblem]) -> Pa
         for axis, s in sp.scores.items():
             lines.append(f"- {axis}: {s:.2f}")
         lines.append("")
-    path = artefacts_dir / "03_chosen_sub_problem.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.SUB_PROBLEM, lines)

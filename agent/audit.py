@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
+
+from agent._constants import MAX_AUDIT_RESPONSE
+from agent._util import now_iso, write_artefact
+
+log = logging.getLogger(__name__)
 
 _PHASE_NAMES = {
     0: "onboarding",
@@ -31,19 +36,13 @@ class AuditEntry:
     extra: dict = field(default_factory=dict)
 
 
-def _now_iso() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds")
-
-
 def write_audit_entry(artefacts_dir: Path, entry: AuditEntry) -> Path:
-    audit_dir = artefacts_dir / "audit"
-    audit_dir.mkdir(parents=True, exist_ok=True)
     name = _PHASE_NAMES.get(entry.phase, f"phase_{entry.phase}")
-    path = audit_dir / f"{entry.phase:02d}_{name}.md"
+    filename = f"{entry.phase:02d}_{name}.md"
     lines = [
         f"# Audit: Phase {entry.phase} — {entry.phase_name}",
         "",
-        f"**Timestamp:** {_now_iso()}",
+        f"**Timestamp:** {now_iso()}",
         "",
         f"**Artefact:** `{entry.artefact_path}`",
         "",
@@ -64,8 +63,11 @@ def write_audit_entry(artefacts_dir: Path, entry: AuditEntry) -> Path:
         for i, r in enumerate(entry.responses, start=1):
             lines.append(f"### Response {i}")
             lines.append("")
+            r_truncated = r[:MAX_AUDIT_RESPONSE]
+            if len(r) > MAX_AUDIT_RESPONSE:
+                r_truncated += " (truncated)"
             lines.append("```")
-            lines.append(r[:5000])
+            lines.append(r_truncated)
             lines.append("```")
             lines.append("")
     if entry.tool_calls:
@@ -74,5 +76,4 @@ def write_audit_entry(artefacts_dir: Path, entry: AuditEntry) -> Path:
         for tc in entry.tool_calls:
             lines.append(f"- `{tc.get('tool', '?')}`: {json.dumps(tc)[:200]}")
         lines.append("")
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, filename, lines)

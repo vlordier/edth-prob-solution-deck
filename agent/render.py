@@ -6,6 +6,9 @@ import logging
 import shutil
 from pathlib import Path
 
+from agent._constants import RenderMode
+from agent._util import write_artefact
+
 log = logging.getLogger(__name__)
 
 
@@ -27,12 +30,12 @@ def has_pptx() -> bool:
         return False
 
 
-def best_renderer() -> str:
+def best_renderer() -> RenderMode:
     if has_marp():
-        return "marp"
+        return RenderMode.MARP
     if has_pptx():
-        return "pptx"
-    return "html"
+        return RenderMode.PPTX
+    return RenderMode.HTML
 
 
 _HTML_TEMPLATE = """<!DOCTYPE html>
@@ -122,7 +125,40 @@ def render_html_deck(
             title = line[2:].strip()
             break
     html = _HTML_TEMPLATE.format(title=title, slides=slide_divs, total=len(slide_bodies))
-    path = artefacts_dir / output_filename
-    path.write_text(html, encoding="utf-8")
-    log.info("Rendered %d slides to %s", len(slide_bodies), path)
+    log.info("Rendered %d slides to %s", len(slide_bodies), output_filename)
+    return write_artefact(artefacts_dir, output_filename, [html])
+
+
+def render_pptx_deck(artefacts_dir: Path, md_text: str) -> Path:
+    import pptx
+    from pptx.util import Inches
+
+    from agent._constants import ARTEFACTS
+
+    prs = pptx.Presentation()
+    prs.slide_width = Inches(16)
+    prs.slide_height = Inches(9)
+    slides = md_text.split("\n---\n")
+    for i, slide_md in enumerate(slides):
+        if i == 0:
+            slide = prs.slides.add_slide(prs.slide_layouts[0])
+            for line in slide_md.split("\n"):
+                st = line.strip()
+                if st.startswith("# "):
+                    slide.shapes.title.text = st[2:]
+                    break
+                if st.startswith("## "):
+                    slide.shapes.title.text = st[3:]
+                    break
+        else:
+            slide = prs.slides.add_slide(prs.slide_layouts[1])
+            lines = slide_md.strip().split("\n")
+            if lines:
+                first = lines[0].strip()
+                slide.shapes.title.text = (
+                    first.lstrip("#").strip()[:100] if first.startswith("#") else first[:100]
+                )
+    path = artefacts_dir / ARTEFACTS.DECK_PPTX
+    prs.save(str(path))
+    log.info("Rendered pptx deck to %s", path)
     return path

@@ -1,26 +1,38 @@
-"""Final deck compiler."""
+"""Final deck compiler.
+
+Orchestrates deck content assembly and renderer dispatch.
+Content → compile_deck_md; rendering → render.py.
+"""
 
 from __future__ import annotations
 
+import logging
+import subprocess
+from contextlib import suppress
 from pathlib import Path
 
-from agent.render import best_renderer, render_html_deck
+from agent._constants import ARTEFACTS, RenderMode
+from agent._models import DECK_CONTEXT_DEFAULTS, DeckContext
+from agent._util import slurp_file, write_artefact
+
+log = logging.getLogger(__name__)
 
 
-def compile_deck_md(artefacts_dir: Path, context: dict) -> str:
-    hackathon = context.get("hackathon_name", "EDTH Munich 2025")
-    project = context.get("project_name", "Project X")
-    team = context.get("team_name", "Team")
+def compile_deck_md(artefacts_dir: Path, context: dict | None = None) -> str:
+    """Produce a single Marp-flavoured markdown string from artefacts.
 
-    def _slurp(name: str) -> str:
-        p = artefacts_dir / name
-        return p.read_text(encoding="utf-8") if p.exists() else f"[{name} not found]"
+    Accepts a DeckContext-compatible dict or None (falls back to defaults).
+    """
+    ctx: DeckContext = dict(DECK_CONTEXT_DEFAULTS, **(context or {}))
+    hackathon = ctx.get("hackathon_name", DECK_CONTEXT_DEFAULTS["hackathon_name"])
+    project = ctx.get("project_name", DECK_CONTEXT_DEFAULTS["project_name"])
+    team = ctx.get("team_name", DECK_CONTEXT_DEFAULTS["team_name"])
 
-    problem = _slurp("02_candidate_problem.md")
-    solution = _slurp("05_owner_pick.md")
-    market = _slurp("07_market.md")
-    comp = _slurp("07_competition.md")
-    bm = _slurp("07_business_model.md")
+    problem = slurp_file(artefacts_dir, ARTEFACTS.CANDIDATE)
+    solution = slurp_file(artefacts_dir, ARTEFACTS.OWNER_PICK)
+    market = slurp_file(artefacts_dir, ARTEFACTS.MARKET)
+    comp = slurp_file(artefacts_dir, ARTEFACTS.COMPETITION)
+    bm = slurp_file(artefacts_dir, ARTEFACTS.BUSINESS_MODEL)
 
     return "\n".join(
         [
@@ -31,7 +43,7 @@ def compile_deck_md(artefacts_dir: Path, context: dict) -> str:
             "",
             f"# {project}",
             f"**{hackathon}**",
-            f"{team} | {context.get('date', '')}",
+            f"{team} | {ctx.get('date', '')}",
             "",
             "---",
             "",
@@ -64,33 +76,35 @@ def compile_deck_md(artefacts_dir: Path, context: dict) -> str:
     )
 
 
-def render_deck(artefacts_dir: Path, context: dict) -> Path:
+def render_deck(artefacts_dir: Path, context: dict | None = None) -> Path:
+    """Compile the deck markdown, write it, and render to the best available format.
+
+    Render order: Marp > pptx > HTML fallback.
+    """
+    from agent.render import best_renderer, detect_marp, render_html_deck, render_pptx_deck
+
     md_text = compile_deck_md(artefacts_dir, context)
-    deck_md_path = artefacts_dir / "07_deck.md"
-    deck_md_path.write_text(md_text, encoding="utf-8")
+    write_artefact(artefacts_dir, ARTEFACTS.DECK_MD, [md_text])
 
     renderer = best_renderer()
-    if renderer == "marp":
-        import subprocess
-
-        from agent.render import detect_marp
-
+    if renderer == RenderMode.MARP:
         marp_path = detect_marp()
+        deck_md_path = artefacts_dir / ARTEFACTS.DECK_MD
         try:
             subprocess.run(
-                [str(marp_path), str(deck_md_path), "-o", str(artefacts_dir / "07_deck.html")],
+                [
+                    str(marp_path),
+                    str(deck_md_path),
+                    "-o",
+                    str(artefacts_dir / ARTEFACTS.DECK_HTML),
+                ],
                 check=True,
                 capture_output=True,
                 timeout=60,
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-            import logging
-
-            logging.getLogger("agent.deck").warning(
-                "Marp HTML render failed: %s. Falling back.", exc
-            )
+            log.warning("Marp HTML render failed: %s. Falling back.", exc)
             return render_html_deck(artefacts_dir, md_text)
-        from contextlib import suppress
 
         with suppress(subprocess.CalledProcessError, subprocess.TimeoutExpired):
             subprocess.run(
@@ -99,47 +113,15 @@ def render_deck(artefacts_dir: Path, context: dict) -> Path:
                     str(deck_md_path),
                     "--pdf",
                     "-o",
-                    str(artefacts_dir / "07_deck.pdf"),
+                    str(artefacts_dir / ARTEFACTS.DECK_PDF),
                 ],
                 check=True,
                 capture_output=True,
                 timeout=60,
             )
-        return artefacts_dir / "07_deck.html"
-    if renderer == "pptx":
-        from agent.render import render_pptx_deck
+        return artefacts_dir / ARTEFACTS.DECK_HTML
 
+    if renderer == RenderMode.PPTX:
         return render_pptx_deck(artefacts_dir, md_text)
+
     return render_html_deck(artefacts_dir, md_text)
-
-
-def render_pptx_deck(artefacts_dir: Path, md_text: str) -> Path:
-    from pptx import Presentation
-    from pptx.util import Inches
-
-    prs = Presentation()
-    prs.slide_width = Inches(16)
-    prs.slide_height = Inches(9)
-    slides = md_text.split("\n---\n")
-    for i, slide_md in enumerate(slides):
-        if i == 0:
-            slide = prs.slides.add_slide(prs.slide_layouts[0])
-            for line in slide_md.split("\n"):
-                st = line.strip()
-                if st.startswith("# "):
-                    slide.shapes.title.text = st[2:]
-                    break
-                elif st.startswith("## "):
-                    slide.shapes.title.text = st[3:]
-                    break
-        else:
-            slide = prs.slides.add_slide(prs.slide_layouts[1])
-            lines = slide_md.strip().split("\n")
-            if lines:
-                first = lines[0].strip()
-                slide.shapes.title.text = (
-                    first.lstrip("#").strip()[:100] if first.startswith("#") else first[:100]
-                )
-    path = artefacts_dir / "07_deck.pptx"
-    prs.save(str(path))
-    return path

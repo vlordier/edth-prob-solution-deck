@@ -9,8 +9,14 @@ See SKILL.md "Question sheet" section.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -22,14 +28,14 @@ class BadQuestion:
 @dataclass
 class GoodQuestion:
     text: str
-    mom_test_rule: str  # which Mom Test principle it follows
+    mom_test_rule: str
 
 
 @dataclass
 class ClusterSheet:
     cluster_name: str
     good_questions: list[GoodQuestion]
-    bad_questions: list[BadQuestion]  # what NOT to ask for this cluster
+    bad_questions: list[BadQuestion]
 
 
 @dataclass
@@ -37,13 +43,10 @@ class QuestionSheet:
     clusters: list[ClusterSheet]
     mom_test_rules: list[str]
     interviewer_tips: list[str]
-    answer_scoring: dict[str, str]  # signal type -> score weight
+    answer_scoring: dict[str, str]
 
 
 def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
-    """Write artefacts/question_sheet.md."""
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
-
     lines = [
         "# Problem Owner Question Sheet",
         "",
@@ -72,14 +75,14 @@ def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
         lines.append(f"## Cluster {ci}: {cluster.cluster_name}")
         lines.append("")
 
-        lines.append("### ✅ Ask These")
+        lines.append("### ↔ Ask These")
         lines.append("")
         for i, q in enumerate(cluster.good_questions, start=1):
             lines.append(f"**Q{ci}.{i}** — {q.text}")
             lines.append(f"  *Mom Test rule: {q.mom_test_rule}*")
             lines.append("")
 
-        lines.append("### ❌ Avoid These")
+        lines.append("### ⚒ Avoid These")
         lines.append("")
         for bq in cluster.bad_questions:
             lines.append(f'- *"{bq.text}"* — {bq.why_bad}')
@@ -96,10 +99,9 @@ def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
         lines.append(f"| {signal_type} | {desc} | |")
     lines.append("")
     lines.append(
-        "**After the interview:** score each cluster 1-5 on purchase intent signal. No signal = no problem."
+        "**After the interview:** score each cluster 1-5 on purchase intent signal. "
+        "No signal = no problem."
     )
     lines.append("")
 
-    path = artefacts_dir / "question_sheet.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.QUESTION_SHEET, lines)

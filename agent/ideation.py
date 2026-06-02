@@ -2,21 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent._constants import ARTEFACTS
+from agent._util import jaccard_similarity, write_artefact
 
-def _tokens(s: str) -> set[str]:
-    return {t.lower() for t in s.split() if len(t) > 2}
-
-
-def jaccard_similarity(a: str, b: str) -> float:
-    ta, tb = _tokens(a), _tokens(b)
-    if not ta and not tb:
-        return 1.0
-    if not ta or not tb:
-        return 0.0
-    return len(ta & tb) / len(ta | tb)
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -38,9 +31,14 @@ def dedupe_ideas(ideas: list[Idea], threshold: float = 0.7) -> list[Idea]:
 
 
 def write_solution_candidates(artefacts_dir: Path, ideas: list[Idea]) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
-    sorted_ideas = sorted(ideas, key=lambda i: -i.rating)
-    lines = ["# Solution Candidates (divergent ideation)", "", f"Total ideas: {len(ideas)}", ""]
+    _ensure_numeric_ratings(ideas)
+    sorted_ideas = sorted(ideas, key=lambda i: i.rating, reverse=True)
+    lines = [
+        "# Solution Candidates (divergent ideation)",
+        "",
+        f"Total ideas: {len(ideas)}",
+        "",
+    ]
     for i, idea in enumerate(sorted_ideas, start=1):
         lines.append(f"## {i}. {idea.id} — rating {idea.rating:.2f}")
         lines.append("")
@@ -56,6 +54,19 @@ def write_solution_candidates(artefacts_dir: Path, ideas: list[Idea]) -> Path:
             for judge, reason in idea.judge_rejections.items():
                 lines.append(f"- {judge}: {reason}")
             lines.append("")
-    path = artefacts_dir / "04_solution_candidates.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.SOLUTION_CANDIDATES, lines)
+
+
+def _ensure_numeric_ratings(ideas: list[Idea]) -> None:
+    """Coerce non-numeric or NaN ratings to 0.0 in-place."""
+    import math
+
+    for idea in ideas:
+        try:
+            rating = float(idea.rating)
+            if math.isnan(rating) or math.isinf(rating):
+                idea.rating = 0.0
+            else:
+                idea.rating = rating
+        except (TypeError, ValueError):
+            idea.rating = 0.0

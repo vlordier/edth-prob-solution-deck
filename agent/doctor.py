@@ -112,7 +112,7 @@ def _check_judges() -> str | None:
                 f"Only {len(lib)} judges loaded (expected ≥2). "
                 "Check judges/*.yaml files for syntax errors."
             )
-    except Exception as e:
+    except OSError as e:
         return f"Judge library failed to load: {e}"
     return None
 
@@ -124,7 +124,7 @@ def _check_persona() -> str | None:
 
         repo_root = Path(__file__).parent.parent
         load_persona(repo_root / "personas", "edth-judge")
-    except Exception as e:
+    except OSError as e:
         return f"Default persona failed to load: {e}"
     return None
 

@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -23,7 +29,6 @@ class Summary:
 
 
 def write_summary(artefacts_dir: Path, summary: Summary) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     ups = sum(1 for v in summary.verdicts if v.thumbs_up)
     downs = len(summary.verdicts) - ups
     lines = [
@@ -46,10 +51,10 @@ def write_summary(artefacts_dir: Path, summary: Summary) -> Path:
     lines.append("")
     lines.append("## Panel Verdict")
     lines.append("")
-    lines.append(f"**{ups} \U0001f44d  {downs} \U0001f44e**")
+    lines.append(f"**{ups} \u2611  {downs} \u2612**")
     lines.append("")
     for v in summary.verdicts:
-        icon = "\U0001f44d" if v.thumbs_up else "\U0001f44e"
+        icon = "\u2611" if v.thumbs_up else "\u2612"
         lines.append(f"- **{v.judge}** {icon} — {v.note}")
     lines.append("")
     lines.append("## Next Steps (48h)")
@@ -57,6 +62,4 @@ def write_summary(artefacts_dir: Path, summary: Summary) -> Path:
     for ns in summary.next_steps:
         lines.append(f"- {ns}")
     lines.append("")
-    path = artefacts_dir / "08_summary.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.SUMMARY, lines)

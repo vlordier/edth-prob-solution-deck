@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
 from agent.rubric import DEFAULT_RUBRIC, score_to_weighted
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -21,7 +26,6 @@ class Candidate:
 
 
 def write_candidate_problem(artefacts_dir: Path, candidates: list[Candidate]) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = ["# Top 3 Candidate Problems", ""]
     for i, c in enumerate(candidates, start=1):
         lines.append(f"## Candidate {i}: {c.name} ({c.problem_id})")
@@ -41,6 +45,4 @@ def write_candidate_problem(artefacts_dir: Path, candidates: list[Candidate]) ->
             lines.append("**Reasoning:**")
             lines.append(c.reasoning)
             lines.append("")
-    path = artefacts_dir / "02_candidate_problem.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.CANDIDATE, lines)

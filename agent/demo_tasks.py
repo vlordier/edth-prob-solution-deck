@@ -8,8 +8,14 @@ See SKILL.md Phase 6 — Task assignment section.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -18,24 +24,21 @@ class DemoTask:
     title: str
     description: str
     estimated_hours: str
-    assigned_to: str  # team member name, or "UNASSIGNED"
-    fit_reasoning: str  # why this person, or why nobody fits
-    gap_flag: bool = False  # true if no team member is well-suited
+    assigned_to: str
+    fit_reasoning: str
+    gap_flag: bool = False
 
 
 @dataclass
 class DemoTaskPlan:
     tasks: list[DemoTask]
     total_estimated_hours: str
-    critical_gaps: list[str]  # skills nobody has
-    suggested_ordering: list[str]  # task IDs in recommended build order
+    critical_gaps: list[str]
+    suggested_ordering: list[str]
     notes: str = ""
 
 
 def write_demo_tasks(artefacts_dir: Path, plan: DemoTaskPlan) -> Path:
-    """Write artefacts/demo_tasks.md."""
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
-
     lines = [
         "# Demo Task Breakdown & Team Assignment",
         "",
@@ -46,7 +49,6 @@ def write_demo_tasks(artefacts_dir: Path, plan: DemoTaskPlan) -> Path:
         "## Tasks",
         "",
     ]
-
     for i, task in enumerate(plan.tasks, start=1):
         lines.append(f"### {i}. {task.id}: {task.title}")
         lines.append("")
@@ -90,6 +92,4 @@ def write_demo_tasks(artefacts_dir: Path, plan: DemoTaskPlan) -> Path:
         lines.append(plan.notes)
         lines.append("")
 
-    path = artefacts_dir / "demo_tasks.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.DEMO_TASKS, lines)

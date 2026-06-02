@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import logging
 from pathlib import Path
 from typing import TypedDict
+
+log = logging.getLogger(__name__)
 
 REQUIRED_COLUMNS = {"Name", "Problem statement"}
 MAX_PROBLEMS = 1000
@@ -91,6 +94,9 @@ def parse_problems_from_string(csv_text: str) -> list[Problem]:
         raise ParseError(msg)
     out: list[Problem] = []
     for row_index, row in enumerate(reader, start=2):
+        if not isinstance(row, dict):
+            log.warning("Skipping malformed row %d: not a dict", row_index)
+            continue
         name = (row.get("Name") or "").strip()
         problem = (row.get("Problem statement") or "").strip()
         if not problem:
@@ -132,9 +138,9 @@ def parse_problems(csv_path: Path) -> list[Problem]:
         )
 
     if len(problems) > WARN_PROBLEMS:
-        print(
-            f"⚠️  Warning: {len(problems)} problems parsed. "
-            f"Consider reducing the CSV to improve clustering quality."
+        log.warning(
+            "%d problems parsed. Consider reducing the CSV to improve clustering quality.",
+            len(problems),
         )
 
     return problems
@@ -148,5 +154,5 @@ def parse_problems_safe(csv_path: Path) -> tuple[list[Problem] | None, str | Non
         return None, str(e)
     except FileNotFoundError as e:
         return None, str(e)
-    except Exception as e:
-        return None, f"Unexpected error parsing CSV: {e}"
+    except OSError as e:
+        return None, f"I/O error parsing CSV: {e}"

@@ -27,7 +27,9 @@ def borda_count(rankings: list[dict[str, int]]) -> list[str]:
 def weighted_borda(rankings: list[dict[str, int]], weights: Iterable[float]) -> list[str]:
     weights = list(weights)
     if len(weights) != len(rankings):
-        raise ValueError("weights length mismatch")
+        raise ValueError(
+            f"weights length mismatch: got {len(weights)} for {len(rankings)} rankings"
+        )
     scores: dict[str, float] = defaultdict(float)
     for item in _all_items(rankings):
         for r, w in zip(rankings, weights, strict=False):

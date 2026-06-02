@@ -2,39 +2,44 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
+
 
 def word_count(text: str) -> int:
-    """Count words in a string. Splits on whitespace."""
     return len(text.strip().split())
 
 
 class MemberProfile(BaseModel):
     name: str
-    intro: str  # raw self-introduction (≥50 words enforced at interview time)
-    skills: list[str] = Field(default_factory=list)  # "Python", "React", etc.
-    built: list[str] = Field(default_factory=list)  # things they've built
+    intro: str
+    skills: list[str] = Field(default_factory=list)
+    built: list[str] = Field(default_factory=list)
     experience_years: str = ""
-    self_assessment: str = ""  # their own take
-    blind_spots: list[str] = Field(default_factory=list)  # gaps the agent detects
-    quick_answers: dict[str, str] = Field(default_factory=dict)  # A/B/C answers
+    self_assessment: str = ""
+    blind_spots: list[str] = Field(default_factory=list)
+    quick_answers: dict[str, str] = Field(default_factory=dict)
 
 
 class TeamDynamics(BaseModel):
-    pitcher: str = ""  # 3-min pitch
-    demo_champion: str = ""  # live demo
-    builder: str = ""  # core code
-    deck: str = ""  # deck / market research
+    pitcher: str = ""
+    demo_champion: str = ""
+    builder: str = ""
+    deck: str = ""
     notes: str = ""
 
 
 class TeamEquipment(BaseModel):
-    available: list[str] = Field(default_factory=list)  # what they have
-    accessible: list[str] = Field(default_factory=list)  # can get in 2h
-    gaps: list[str] = Field(default_factory=list)  # critical — can't solve without
+    available: list[str] = Field(default_factory=list)
+    accessible: list[str] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
     notes: str = ""
 
 
@@ -48,8 +53,6 @@ class TeamProfile(BaseModel):
 
 
 def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
-    """Write artefacts/team_profile.md — committed to git as team memory."""
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Team Profile",
         "",
@@ -58,7 +61,6 @@ def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
         "---",
         "",
     ]
-
     for i, m in enumerate(profile.members, start=1):
         lines.append(f"## Member {i}: {m.name}")
         lines.append("")
@@ -141,6 +143,4 @@ def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
         lines.append(f"- {g}")
     lines.append("")
 
-    path = artefacts_dir / "team_profile.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.TEAM_PROFILE, lines)

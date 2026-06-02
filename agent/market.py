@@ -2,25 +2,30 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 def write_market(
     artefacts_dir: Path, tam: str, sam: str, som: str, trends: str, personas: list[str]
 ) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Market Research",
         "",
         "## Market Size",
         "",
-        f"- **TAM:** {tam}",
-        f"- **SAM:** {sam}",
-        f"- **SOM:** {som}",
+        f"- **TAM:** {tam or '(not estimated)'}",
+        f"- **SAM:** {sam or '(not estimated)'}",
+        f"- **SOM:** {som or '(not estimated)'}",
         "",
         "## Growth & Trends",
         "",
-        trends,
+        trends or "(not researched)",
         "",
         "## Buyer Personas",
         "",
@@ -28,15 +33,12 @@ def write_market(
     for i, p in enumerate(personas, start=1):
         lines.append(f"{i}. {p}")
     lines.append("")
-    path = artefacts_dir / "07_market.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.MARKET, lines)
 
 
 def write_competition(
     artefacts_dir: Path, competitors: list[tuple[str, str, str, str]], moat: list[str]
 ) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Competition Analysis",
         "",
@@ -45,7 +47,11 @@ def write_competition(
         "| Competitor | Strength | Weakness | Our Edge |",
         "|---|---|---|---|",
     ]
-    for name, strength, weakness, edge in competitors:
+    for entry in competitors:
+        if len(entry) != 4:
+            log.warning("Skipping malformed competitor entry: %r", entry)
+            continue
+        name, strength, weakness, edge = entry
         lines.append(f"| {name} | {strength} | {weakness} | {edge} |")
     lines.append("")
     lines.append("## Moat")
@@ -53,35 +59,30 @@ def write_competition(
     for i, m in enumerate(moat, start=1):
         lines.append(f"{i}. {m}")
     lines.append("")
-    path = artefacts_dir / "07_competition.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.COMPETITION, lines)
 
 
 def write_business_model(
     artefacts_dir: Path, revenue: str, pricing: str, gtm: str, defensibility: str
 ) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Business Model",
         "",
         "## Revenue Model",
         "",
-        revenue,
+        revenue or "(not specified)",
         "",
         "## Pricing",
         "",
-        pricing,
+        pricing or "(not specified)",
         "",
         "## Go-to-Market",
         "",
-        gtm,
+        gtm or "(not specified)",
         "",
         "## Defensibility",
         "",
-        defensibility,
+        defensibility or "(not specified)",
         "",
     ]
-    path = artefacts_dir / "07_business_model.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.BUSINESS_MODEL, lines)

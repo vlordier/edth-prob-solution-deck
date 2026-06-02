@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, TypedDict
 
 import yaml
 
+from agent._constants import ARTEFACTS
 from agent.rubric import DEFAULT_RUBRIC
+
+log = logging.getLogger(__name__)
 
 
 class AgentContext(TypedDict, total=False):
@@ -44,11 +48,15 @@ def default_context() -> AgentContext:
 
 
 def load_context(artefacts_dir: Path) -> AgentContext:
-    path = artefacts_dir / "00_context.yaml"
+    path = artefacts_dir / ARTEFACTS.CONTEXT
     if not path.exists():
         return default_context()
     with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+        try:
+            data = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            log.warning("Malformed context YAML in %s: %s — falling back to defaults", path, e)
+            return default_context()
     default = default_context()
     merged = AgentContext(
         hackathon={**default["hackathon"], **data.get("hackathon", {})},
@@ -61,7 +69,11 @@ def load_context(artefacts_dir: Path) -> AgentContext:
 
 def save_context(artefacts_dir: Path, context: AgentContext) -> Path:
     artefacts_dir.mkdir(parents=True, exist_ok=True)
-    path = artefacts_dir / "00_context.yaml"
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(dict(context), f, sort_keys=False, default_flow_style=False)
+    path = artefacts_dir / ARTEFACTS.CONTEXT
+    try:
+        with path.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(dict(context), f, sort_keys=False, default_flow_style=False)
+    except OSError as exc:
+        log.error("Failed to save context to %s: %s", path, exc)
+        raise
     return path

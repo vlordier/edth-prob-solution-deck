@@ -7,9 +7,14 @@ through the 9-phase workflow. See spec §8.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from agent._constants import ARTEFACTS, PHASE_COUNT
+
+log = logging.getLogger(__name__)
 
 
 def _now_iso() -> str:
@@ -17,7 +22,6 @@ def _now_iso() -> str:
 
 
 def empty_state() -> dict[str, Any]:
-    """Return a fresh empty state dict with the schema from spec §8.1."""
     return {
         "version": "0.1.0",
         "started_at": None,
@@ -33,7 +37,8 @@ def empty_state() -> dict[str, Any]:
             "rubric_path": "hackathons/edth.yaml",
         },
         "phases": {
-            str(i): {"status": "pending", "artefact": None, "completed_at": None} for i in range(9)
+            str(i): {"status": "pending", "artefact": None, "completed_at": None}
+            for i in range(PHASE_COUNT)
         },
         "decisions": {
             "chosen_problem_id": None,
@@ -54,11 +59,7 @@ def empty_state() -> dict[str, Any]:
 
 
 def load_state(artefacts_dir: Path) -> dict[str, Any]:
-    """Load state.json from artefacts_dir, or return an empty dict if missing.
-
-    Warns on corrupt JSON. Detects concurrent access via mtime check.
-    """
-    state_path = artefacts_dir / "state.json"
+    state_path = artefacts_dir / ARTEFACTS.STATE
     if not state_path.exists():
         return {}
     mtime = state_path.stat().st_mtime
@@ -66,72 +67,54 @@ def load_state(artefacts_dir: Path) -> dict[str, Any]:
         with state_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        import sys
-
-        print(
-            f"⚠️  state.json is corrupted ({e}). "
-            f"Backup saved to state.json.corrupt. Consider /edth-agent reset.",
-            file=sys.stderr,
+        log.warning(
+            "state.json is corrupted (%s). Backup saved to state.json.corrupt. "
+            "Consider /edth-agent reset.",
+            e,
         )
-        # Save the corrupt file as backup so user doesn't lose data
         corrupt_path = artefacts_dir / "state.json.corrupt"
         try:
             state_path.rename(corrupt_path)
-            print(f"   Moved to {corrupt_path}", file=sys.stderr)
-        except OSError:
-            pass
+            log.warning("Moved corrupt state.json to %s", corrupt_path)
+        except OSError as exc:
+            log.warning("Could not create corruption backup: %s", exc)
         return {}
     except OSError as e:
-        import sys
-
-        print(f"⚠️  Could not read state.json: {e}", file=sys.stderr)
+        log.warning("Could not read state.json: %s", e)
         return {}
 
-    # Warn if the file was modified while we were reading (concurrent access)
     if state_path.stat().st_mtime != mtime:
-        import sys
-
-        print(
-            "⚠️  state.json was modified during load — another process may be writing. "
-            "Avoid running two agents on the same repo simultaneously.",
-            file=sys.stderr,
+        log.warning(
+            "state.json was modified during load — another process may be writing. "
+            "Avoid running two agents on the same repo simultaneously."
         )
-
     return data
 
 
 def save_state(artefacts_dir: Path, state: dict[str, Any]) -> Path:
-    """Save state to artefacts_dir/state.json. Creates the dir if missing.
-
-    Uses atomic write (write to temp file, then rename) to prevent
-    corruption from partial writes.
-    """
     artefacts_dir.mkdir(parents=True, exist_ok=True)
     state["updated_at"] = _now_iso()
     if state.get("started_at") is None:
         state["started_at"] = state["updated_at"]
-    state_path = artefacts_dir / "state.json"
+    state_path = artefacts_dir / ARTEFACTS.STATE
     tmp_path = artefacts_dir / "state.json.tmp"
     try:
         with tmp_path.open("w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, sort_keys=True)
         tmp_path.rename(state_path)
     except OSError:
-        # Fallback: direct write if rename fails (e.g., cross-filesystem)
         with state_path.open("w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, sort_keys=True)
     return state_path
 
 
 def get_phase_status(state: dict[str, Any], phase: int) -> str:
-    """Return the status string ('pending' | 'in_progress' | 'completed') for a phase."""
     if not state:
         return "pending"
     return state["phases"][str(phase)]["status"]
 
 
 def mark_phase_completed(state: dict[str, Any], phase: int, artefact_path: Path) -> dict[str, Any]:
-    """Mark a phase as completed with its artefact path and a timestamp."""
     state["phases"][str(phase)] = {
         "status": "completed",
         "artefact": str(artefact_path),
@@ -142,7 +125,6 @@ def mark_phase_completed(state: dict[str, Any], phase: int, artefact_path: Path)
 
 
 def set_config(state: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
-    """Update one or more config fields. Returns the updated state."""
     for key, value in kwargs.items():
         if key not in state["config"]:
             raise KeyError(f"Unknown config key: {key!r}")
@@ -151,7 +133,6 @@ def set_config(state: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
 
 
 def set_decision(state: dict[str, Any], key: str, value: Any) -> dict[str, Any]:
-    """Record a decision (problem / sub-problem / solution). Returns updated state."""
     if key not in state["decisions"]:
         raise KeyError(f"Unknown decision key: {key!r}")
     state["decisions"][key] = value
@@ -161,7 +142,6 @@ def set_decision(state: dict[str, Any], key: str, value: Any) -> dict[str, Any]:
 def lock_panel(
     state: dict[str, Any], judge_shorts: list[str], manually_overridden: bool = False
 ) -> dict[str, Any]:
-    """Lock a panel of judges for the current run."""
     state["panel"] = {
         "auto_selected": list(judge_shorts),
         "manually_overridden": manually_overridden,
@@ -171,7 +151,6 @@ def lock_panel(
 
 
 def mark_phase_in_progress(state: dict[str, Any], phase: int) -> dict[str, Any]:
-    """Mark a phase as in_progress. Call before starting any phase work."""
     state["phases"][str(phase)] = {
         "status": "in_progress",
         "artefact": None,
@@ -182,7 +161,6 @@ def mark_phase_in_progress(state: dict[str, Any], phase: int) -> dict[str, Any]:
 
 
 def rollback_phase(state: dict[str, Any], phase: int) -> dict[str, Any]:
-    """Rollback a phase to pending. Use when a phase fails mid-execution."""
     state["phases"][str(phase)] = {
         "status": "pending",
         "artefact": None,
@@ -193,7 +171,6 @@ def rollback_phase(state: dict[str, Any], phase: int) -> dict[str, Any]:
 
 
 def elapsed_minutes(state: dict[str, Any]) -> float | None:
-    """Return minutes elapsed since started_at, or None if not started."""
     started = state.get("started_at")
     if not started:
         return None
@@ -202,8 +179,9 @@ def elapsed_minutes(state: dict[str, Any]) -> float | None:
 
 
 def expected_phases_remaining(state: dict[str, Any]) -> int:
-    """Number of phases still pending (not completed)."""
     completed = sum(
-        1 for p in range(9) if state.get("phases", {}).get(str(p), {}).get("status") == "completed"
+        1
+        for p in range(PHASE_COUNT)
+        if state.get("phases", {}).get(str(p), {}).get("status") == "completed"
     )
-    return max(0, 9 - completed)
+    return max(0, PHASE_COUNT - completed)

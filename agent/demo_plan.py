@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+from agent._constants import ARTEFACTS
+from agent._util import write_artefact
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -29,7 +35,6 @@ def _fmt_seconds(s: int) -> str:
 
 
 def write_demo_plan(artefacts_dir: Path, plan: DemoPlan) -> Path:
-    artefacts_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Demo Plan",
         "",
@@ -60,6 +65,4 @@ def write_demo_plan(artefacts_dir: Path, plan: DemoPlan) -> Path:
     for r in plan.risks:
         lines.append(f"| {r.what} | {r.likelihood} | {r.impact} | {r.mitigation} |")
     lines.append("")
-    path = artefacts_dir / "06_demo_plan.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    return write_artefact(artefacts_dir, ARTEFACTS.DEMO_PLAN, lines)
