@@ -195,39 +195,44 @@ from Phase 1, following The Mom Test methodology (Rob Fitzpatrick).
 
 Read `artefacts/01_triage.md` to get the clusters and their problem IDs.
 
-CRITICAL RULES — The Mom Test:
-- NEVER ask "Would you use X?" or "Do you think X is a problem?" (leading)
-- NEVER ask hypotheticals: "How much would you pay?" (speculation)
-- ALWAYS ask about specific past incidents: "Tell me about the last time..."
-- ALWAYS ask about current behavior: "How do you solve this today?"
-- ALWAYS look for concrete cost: "How many hours/people/dollars does this burn?"
+IMPORTANT: these problem owners are soldiers, pilots, drone operators, EW
+specialists, tank commanders — not procurement officers. Adapt your language.
+
+CRITICAL RULES — The Mom Test (operator edition):
+- NEVER ask "Would you use X?" or "Do you think X would help?" (leading)
+- NEVER ask hypotheticals or scales: "On a scale of 1-10..." (abstract)
+- ALWAYS ask about specific missions/sorties: "Last time this failed..."
+- ALWAYS ask about current kit: "What do you use today? What's wrong with it?"
+- ALWAYS look for concrete cost: sorties scrubbed, birds lost, time-to-kill,
+  equipment damaged, people put at risk, territory lost.
 - ALWAYS probe for failed attempts: "What did you try that didn't work?"
-- If they say "it's a big problem" — ask "how many times did it happen last week?"
-- If they say "we'd buy that" — ask "who signs the PO and what's their email?"
+- If they say "it's a big problem" — "How many times last week? Which mission?"
+- If they say "we need this" — "What would have happened differently last
+  Tuesday if you'd had it?"
 
 Step 1 — Owner questions (3 per cluster, minimum 9 total):
 
 CLUSTER QUESTIONS (3 per cluster):
-  Q-0XX: "Walk me through the last time you dealt with [cluster topic]. What
-         happened, step by step?" (past incident, not opinion)
-  Q-0XX: "How do you solve [cluster topic] today? What tools, people, or
-         workarounds are you using right now?" (current behavior)
-  Q-0XX: "What did you try before your current approach, and why did you
-         abandon it?" (failed attempts)
+  Q-0XX: "Walk me through the last mission where [cluster topic] was a factor.
+         What happened, step by step — from mission brief to debrief?"
+         (past incident, not opinion)
+  Q-0XX: "What's your current kit or workaround for [cluster topic]? What's its
+         failure mode when it lets you down?" (current behavior + pain)
+  Q-0XX: "What did your unit try before this that didn't work? Why was it
+         abandoned?" (failed attempts)
 
-CROSS-CUTTING QUESTIONS (asked once, tagged with cluster that triggers it):
-  Q-0XX: "In the past month, how many times did a mission or operation get
-         delayed or compromised because [cluster topic] wasn't solved? What was
-         the worst incident?" (concrete frequency + cost)
-  Q-0XX: "Who specifically is the person accountable for fixing this? What's
-         their title and what happens to them if it's not fixed in 6 months?"
-         (purchasing intent + consequences)
-  Q-0XX: "If you had to show me proof that this is a real problem right now
-         — a screenshot, an email thread, an after-action report — what would
-         you show me?" (evidence of pain)
-  Q-0XX: "Is there anyone else I should talk to who feels this pain more
-         acutely than you?" (referral check — if no one comes to mind,
-         the problem may be shallow)
+CROSS-CUTTING QUESTIONS:
+  Q-0XX: "In the last month, how many sorties or missions were impacted because
+         [cluster topic] wasn't solved? Give me the worst one — what was the
+         operational outcome?" (concrete frequency + operational cost)
+  Q-0XX: "Who in the chain of command is pushing hardest for a solution to this?
+         What happens to their unit's readiness if nothing changes in 6 months?"
+         (command pressure = real demand)
+  Q-0XX: "If you had to show me proof this is a real problem — an after-action
+         report, a mission debrief slide, a video clip — what would you show me?"
+         (evidence of pain)
+  Q-0XX: "Who in your unit — or another unit — feels this pain even more than
+         you? Can you put me in touch?" (referral check — no referral = shallow)
 
 Tag all with asker="mom-test". These are the structured discovery questions.
 
@@ -292,38 +297,62 @@ flow. Can be called at any time after Phase 1 completes.
 Execute this prompt verbatim:
 
 ```
-You are generating a printable Mom Test question sheet for interviewing
-a problem owner. Read `artefacts/01_triage.md` to get the top 3 clusters.
+You are generating a Mom Test question sheet for interviewing a MILITARY
+problem owner (pilot, drone operator, JTAC, signals analyst, tank commander,
+UUV navigator, etc.). Read `artefacts/01_triage.md` to get the top clusters.
 
-Step 1 — Mom Test rules (5-6 rules, verbatim):
-  1. Talk about their life, not your idea.
-  2. Ask about specific past incidents — "the last time this happened..."
-  3. Never ask "would you use X?" or "how much would you pay?"
-  4. Look for concrete cost: hours, people, dollars burned.
-  5. Compliments are traps — "sounds great" means "I'm being polite."
-  6. If they can't introduce you to someone who feels it more, the problem
-     may not exist.
+CRITICAL: these are soldiers and operators, not procurement officers.
+They don't talk about "ROI" or "willingness to pay." They talk about
+mission failure, lost time, dead friends, and workarounds held together
+with duct tape. The question sheet must reflect this.
 
-Step 2 — Interviewer tips (4-5 tips):
-  - Start every question with "Tell me about the last time..."
-  - If they say "a lot of people have this problem", ask for an introduction
-    right there. Pull out your phone.
-  - Bad answer: "We'd definitely use that." Good answer: "Last week we lost
-    3 hours because we didn't have this. Here's the email thread."
-  - Record the call. Note specific names, dates, and numbers.
-  - End with: "Is there anything I should have asked?"
+Step 1 — Mom Test rules (6 rules, adapted for operators):
+  1. Talk about their mission, not your solution.
+  2. Ask about specific sorties, patrols, or engagements — "the last time
+     this failed, what happened?"
+  3. Never ask "would this help?" — they'll say yes to be polite. Ask
+     "what do you use today and what's wrong with it?"
+  4. Look for concrete cost: seconds lost, missions aborted, people put at
+     risk, equipment damaged, sorties scrubbed.
+  5. "That sounds like a good idea" = they're being polite. Real signal:
+     "Last month we lost two birds because we couldn't see them."
+  6. If they can't name a specific mission where this would have changed
+     the outcome, the problem may not exist.
+
+Step 2 — Interviewer tips (5 tips, operator-specific):
+  - Start with: "Walk me through your last shift / sortie / patrol where
+    [cluster topic] was a factor."
+  - If they say "this happens all the time," ask: "How many times last week?"
+    Operators count things — if they can't give you a number, it's not
+    happening all the time.
+  - Bad answer: "Yeah, an AI system would definitely improve things."
+    Good answer: "Last Tuesday we had 3 drones come in. I spotted 2 on
+    thermal. The third one I never saw. It hit the ammo truck."
+  - Ask about the CO's reaction: "What did your commander say after it
+    happened? What's the operational pressure from above?"
+  - End with: "What's the one piece of kit you wish existed but doesn't?"
 
 Step 3 — Per cluster: 3 DO-ask questions + 2 DON'T-ask questions
-  For each of the top 3 clusters, generate:
-  - 3 good questions (past-tense, incident-based, cost-probing)
-  - 2 bad questions (leading, hypothetical, opinion-seeking) with WHY they're bad
+  For each of the top 3 clusters, generate questions adapted to the
+  operational domain (UAV pilot, tank crew, EW operator, etc.).
+
+  DO-ask pattern:
+    - "Tell me about the last time [problem] happened during a mission."
+    - "What's your current kit / workaround, and what's its failure mode?"
+    - "If you had [solution] last month, which specific mission changes?"
+
+  DON'T-ask pattern:
+    - "Would [solution] make your job easier?" → Leading. Everyone says yes.
+    - "On a scale of 1-10, how big is this problem?" → Abstract. Operators
+      don't think in scales, they think in outcomes.
+
   Build these as `agent.sheet.GoodQuestion` and `agent.sheet.BadQuestion`.
 
-Step 4 — Answer scoring rubric (4 rows):
-  | Concrete past incident with cost | Strong signal — validated problem |
-  | Vague complaint, no specifics | Weak signal — not validated |
-  | "Sounds great" / "very interesting" | Anti-signal — being polite |
-  | "Let me introduce you to X" | Strong signal — they care enough to connect |
+Step 4 — Answer signal rubric (operator version, 4 rows):
+  | Concrete incident with outcome (casualties, equipment loss, mission abort) | STRONG — real problem, lives at stake |
+  | Vague "it happens a lot" with no specific date or outcome | WEAK — may be tribal lore, not validated |
+  | "That's interesting" / "good idea" / "keep me posted" | ANTI-SIGNAL — polite brush-off |
+  | "Here's the after-action report. I can introduce you to the squadron CO." | STRONG — they trust you enough to escalate |
 
 Build a `agent.sheet.QuestionSheet` and write via
 `agent.sheet.write_question_sheet(artefacts_dir, sheet)`.
