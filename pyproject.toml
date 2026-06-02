@@ -2,7 +2,7 @@
 name = "edth-agent"
 version = "0.1.0"
 description = "Hackathon agent: problem statement CSV to problem/solution pitch deck"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0",
     "python-pptx>=0.6.21",

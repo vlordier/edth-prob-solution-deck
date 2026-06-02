@@ -25,8 +25,8 @@ bash setup.sh
 **Manual setup** (if you prefer step by step):
 
 ```bash
-# 1. Python 3.11+ from https://python.org
-python3 --version  # must be ≥ 3.11
+# 1. Python 3.12+ from https://python.org
+python3 --version  # must be ≥ 3.12
 
 # 2. Install uv
 # macOS / Linux:
@@ -1171,10 +1171,7 @@ Report results:
 
 ## Linting & quality
 
-The repo has automated quality checks:
-
-- **Ruff** — fast Python linter + formatter. Run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` to auto-fix.
-- **Markdownlint** — keeps SKILL.md, README, and docs clean. Config in `.markdownlint.yaml`.
-- **Pre-commit hooks** — run `uv run pre-commit install --install-hooks` once. After that, ruff + markdownlint + end-of-file-fixer + trailing-whitespace run automatically on every `git commit`.
+- **Ruff** — fast Python linter + formatter (Rust, ~0.01s). Run `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/` to auto-fix.
+- **Pre-commit hooks** — run `uv run pre-commit install --install-hooks` once. After that, ruff + end-of-file-fixer + trailing-whitespace + merge-conflict check run automatically on every `git commit`.
 
 When you create or modify Python code, the agent automatically runs ruff before continuing. If ruff finds unfixable issues, it will report them.

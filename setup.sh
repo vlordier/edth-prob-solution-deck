@@ -25,14 +25,14 @@ esac
 
 info "Detected platform: $PLATFORM ($OS)"
 
-# ── Check for Python 3.11+ ──
+# ── Check for Python 3.12+ ──
 PYTHON=""
-for cmd in python3.13 python3.12 python3.11 python3; do
+for cmd in python3.13 python3.12 python3; do
     if command -v "$cmd" &>/dev/null; then
         ver=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "0.0")
         major=$(echo "$ver" | cut -d. -f1)
         minor=$(echo "$ver" | cut -d. -f2)
-        if [ "$major" -ge 3 ] && [ "$minor" -ge 11 ]; then
+        if [ "$major" -ge 3 ] && [ "$minor" -ge 12 ]; then
             PYTHON="$cmd"
             break
         fi
@@ -40,7 +40,7 @@ for cmd in python3.13 python3.12 python3.11 python3; do
 done
 
 if [ -z "$PYTHON" ]; then
-    error "Python 3.11+ not found. Install from https://python.org"
+    error "Python 3.12+ not found. Install from https://python.org"
     info "macOS: brew install python@3.13"
     info "Linux: sudo apt install python3.13 (or your distro's package)"
     info "Windows: winget install Python.Python.3.13"
