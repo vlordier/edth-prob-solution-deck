@@ -114,6 +114,8 @@ Just type `/edth-agent`. The agent auto-checks your environment, resumes from wh
 | `/edth-agent panel <short>` | Free-form chat with one judge in character |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet for owner interviews |
 | `/edth-agent render` | Re-render the deck from current artefacts |
+| `/edth-agent review` | Submit a draft PDF/deck to the 12-judge panel for live Q&A — each judge asks domain-relevant questions |
+| `/edth-agent setup` | Guided first-time setup: uv sync, pre-commit hooks, Exa MCP install |
 
 ## Phases (0–8)
 
@@ -1005,6 +1007,136 @@ Once you have a clean one-sentence pitch, say:
 9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
 10. Print time plus: `⏱  Total: {elapsed:.0f} min across 9 phases.`
 11. Write audit. Mark run complete. State: `current_phase: 9`.
+
+---
+
+## Pitch Review (`/edth-agent review`)
+
+Submits a draft PDF or markdown deck to the full 12-judge panel for
+live Q&A. Each judge asks 2-3 questions relevant to their expertise.
+They do NOT point out flaws directly — they probe the gaps.
+
+Use this after Phase 7 or 8, before presenting. Also useful ad-hoc
+when you have a last-minute idea and want to stress-test it.
+
+### Pitch Review Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are convening the full 12-judge panel to review a pitch deck.
+The user has a draft — either an uploaded PDF, a rendered HTML
+deck, or the markdown at `artefacts/07_deck.md`.
+
+Ask the user: "Share your deck PDF or point me to the markdown file."
+Read the deck content (extract text from PDF using built-in tools,
+or read the .md file directly).
+
+After reading the deck, load the FULL 12-judge library from
+`judges/*.yaml`. For EACH judge, ask 2-3 questions as if you are
+sitting in the audience after the 3-minute pitch. Questions must:
+
+  1. Be specific to their expertise (pilot asks about kill chain,
+     procurement officer asks about FAR pathway, etc.).
+  2. NOT be "this is wrong" or "this doesn't work." Instead, ask
+     "walk me through..." or "help me understand..." or "what happens
+     when...".
+  3. Quote at least one thing the judge actually read from the deck.
+     "On slide 3 you mention [X]. Can you walk me through [Y]?"
+  4. Probe the gap, not the flaw. If the deck claims "edge-native",
+     the scaling engineer asks "What's the deployment diagram?"
+     If it claims "AI-powered," the skeptic asks "What's the simplest
+     deployed version of this today?"
+
+Format output as a Q&A document:
+
+# Pitch Review — 12-Judge Panel
+## Deck: [name]
+
+For each judge:
+
+### {Short} — {Name}, {Role}
+- **Q1:** "[Question that references a specific slide or claim]"
+  *Why I'm asking:* [1-line explanation of the gap they're probing]
+- **Q2:** "[Question]"
+- **Q3:** "[Question]" (if applicable)
+
+After all 12 judges, add:
+
+## Urgent Questions (Must Answer Before You Pitch)
+[2-3 questions that converged across 3+ judges — the cross-cutting gaps]
+
+## Hardest Questions (May Come Up Live)
+[2-3 questions from the toughest judges — prepare these answers]
+```
+
+### Implementation steps
+
+1. Print: `⚙️  Pitch Review — convening the 12-judge panel...`
+2. Ask user for the deck (PDF, HTML, or `artefacts/07_deck.md`).
+3. Extract text. Read `judges/*.yaml` (all 12).
+4. Execute the prompt template above. One at a time, per judge.
+5. Print results to the console. Optionally write to `artefacts/pitch_review.md`.
+6. Print: `✅ Pitch review complete. Questions from all 12 judges.`
+7. Write audit entry.
+
+---
+
+## Guided Setup (`/edth-agent setup`)
+
+Walks a new user through first-time setup. Use after `git clone` but
+before any other command.
+
+### Setup Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are onboarding a new user to the EDTH Hackathon Agent. Walk them
+through setup step by step. After each step, confirm it worked before
+moving on.
+
+Step 1 — Python environment:
+  Run: `bash setup.sh`
+  This detects the OS, installs uv, syncs deps, and runs tests.
+  If it fails, help the user debug (is Python 3.12+ installed?
+  Is the shell compatible?). Verify: `uv run pytest -q` passes.
+
+Step 2 — Pre-commit hooks:
+  Run: `uv run pre-commit install --install-hooks`
+  Explain: "This runs ruff + formatting checks on every git commit.
+  It keeps the code clean automatically."
+
+Step 3 — Exa MCP (web search):
+  If the user is on Claude Code:
+    Run: `claude mcp add --transport http exa https://mcp.exa.ai/mcp`
+    Verify: `claude mcp list` shows exa as ✓ Connected.
+  If the user is on OpenCode:
+    Tell them: "The file `opencode.json` in the project root already
+    configures Exa. OpenCode will load it automatically on next start."
+  Explain: "Exa gives the agent real web search — used for market
+  research, competitor analysis, and prior art in Phases 1, 5, and 7."
+
+Step 4 — Context7 MCP (optional, library docs):
+  Ask: "Do you want up-to-date library documentation? (y/n)"
+  If yes:
+    Guide them to sign up at https://context7.com, get their API key.
+    Run: `claude mcp add --scope user --header "CONTEXT7_API_KEY: $KEY" --transport http context7 https://mcp.context7.com/mcp`
+    Verify: `claude mcp list` shows context7 as ✓ Connected.
+  If no: "You can add it later with /edth-agent setup."
+
+Step 5 — Verify:
+  Print: "Setup complete. Next: /edth-agent dry-run to prove it works,
+  then /edth-agent team to introduce your team, then /edth-agent to
+  start the full workflow."
+```
+
+### Implementation steps
+
+1. Print: `⚙️  Guided Setup — let's get you running.`
+2. Execute prompt template above, step by step.
+3. Write audit entry.
+
 
 ---
 

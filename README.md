@@ -57,8 +57,13 @@ claude mcp add --transport http exa https://mcp.exa.ai/mcp
 claude mcp add --scope user --header "CONTEXT7_API_KEY: $CONTEXT7_API_KEY" --transport http context7 https://mcp.context7.com/mcp
 # Then: claude
 ```
-
 Both auto-discover the skill from `.claude/skills/edth-agent/`. The first invocation auto-checks that `uv run python -c "import agent"` works.
+
+**Or set up Exa directly from the agent:**
+```
+/edth-agent setup
+```
+This walks you through: `uv sync`, pre-commit hooks, and `claude mcp add exa` in one flow.
 
 ### 4. Optional: Context7 API key (higher rate limits)
 
@@ -83,8 +88,10 @@ All commands in OpenCode or Claude Code chat:
 | Command | Does |
 |---|---|
 | `/edth-agent` | **Default** — resume or start the workflow |
+| `/edth-agent setup` | Guided first-time setup (uv, pre-commit, Exa MCP) |
 | `/edth-agent dry-run` | 30s smoke test — full pipeline, zero interaction |
 | `/edth-agent team` | Interview each member — skills, blind spots, roles |
+| `/edth-agent review` | Submit a draft deck to all 12 judges for live Q&A |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |
 | `/edth-agent validate` | Check all artefacts for issues |
