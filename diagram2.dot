@@ -1,0 +1,98 @@
+digraph stages {
+    rankdir=TB
+    bgcolor="#14171c"
+    fontname="Arial"
+    node [fontname="Arial" style="filled,rounded" shape=rect margin="0.15,0.12"]
+    edge [style=invis]
+
+    subgraph cluster_1 {
+        label="STAGE 1 — SELECT"
+        fontcolor="#fcaf3b"
+        fontsize="16"
+        color="#fcaf3b"
+        style=dashed
+        penwidth=1
+        bgcolor="#14171c"
+        node [fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff" penwidth=1]
+
+        s1a [label="Cluster\nby theme"]
+        s1b [label="Score\non 4 axes"]
+        s1c [label="Quality\nflags"]
+        s1d [label="Market\ncheck"]
+        s1e [label="→ Top 3" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b"]
+
+        s1a -> s1b -> s1c -> s1d -> s1e
+    }
+
+    subgraph cluster_2 {
+        label="STAGE 2 — ELICIT"
+        fontcolor="#fcaf3b"
+        fontsize="16"
+        color="#fcaf3b"
+        style=dashed
+        penwidth=1
+        bgcolor="#14171c"
+        node [fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff" penwidth=1]
+
+        s2a [label="Owner\nQ&A"]
+        s2b [label="Judge\nquestions"]
+        s2c [label="Re-score\ncandidates"]
+        s2d [label="→ Pick #1" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b"]
+
+        s2a -> s2b -> s2c -> s2d
+    }
+
+    subgraph cluster_3 {
+        label="STAGE 3 — VALIDATE"
+        fontcolor="#fcaf3b"
+        fontsize="16"
+        color="#fcaf3b"
+        style=dashed
+        penwidth=1
+        bgcolor="#14171c"
+        node [fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff" penwidth=1]
+
+        s3a [label="Decompose\n5-8 chunks"]
+        s3b [label="ROI-score\neach"]
+        s3c [label="Panel\nreviews"]
+        s3d [label="→ Pick slice" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b"]
+
+        s3a -> s3b -> s3c -> s3d
+    }
+
+    subgraph cluster_4 {
+        label="STAGE 4 — IDEATE"
+        fontcolor="#fcaf3b"
+        fontsize="16"
+        color="#fcaf3b"
+        style=dashed
+        penwidth=1
+        bgcolor="#14171c"
+        node [fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff" penwidth=1]
+
+        s4a [label="7 divergent\ntechniques"]
+        s4b [label="20+ raw\nideas"]
+        s4c [label="Panel\nrates 1-5"]
+        s4d [label="→ Top 5" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b"]
+
+        s4a -> s4b -> s4c -> s4d
+    }
+
+    subgraph cluster_5 {
+        label="STAGE 5 — RANK"
+        fontcolor="#fcaf3b"
+        fontsize="16"
+        color="#fcaf3b"
+        style=dashed
+        penwidth=1
+        bgcolor="#14171c"
+        node [fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff" penwidth=1]
+
+        s5a [label="Web\nresearch"]
+        s5b [label="Panel\nre-rank"]
+        s5c [label="Owner\nvalidates"]
+        s5d [label="→ Winner" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b"]
+
+        s5a -> s5b -> s5c -> s5d
+    }
+}

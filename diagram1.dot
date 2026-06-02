@@ -1,0 +1,19 @@
+digraph overview {
+    rankdir=TB
+    bgcolor="#14171c"
+    fontname="Arial"
+    nodesep=0.5
+    ranksep=0.3
+    node [fontname="Arial" style="filled,rounded" shape=rect margin="0.2,0.15" fontsize=14 width=2.8]
+    edge [color="#3a3e43" penwidth=2 arrowsize=0.7]
+
+    input [label="📄 INPUT: 40+ problems" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b" penwidth=3]
+    s1 [label="1. SELECT — cluster, score, flag, market check, top 3" fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff"]
+    s2 [label="2. ELICIT — owner Q&A, judge questions, re-score, pick #1" fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff"]
+    s3 [label="3. VALIDATE — decompose, ROI-score, panel reviews, pick slice" fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff"]
+    s4 [label="4. IDEATE — 7 techniques, 20+ ideas, panel rates 1-5, top 5" fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff"]
+    s5 [label="5. RANK — web research, panel re-rank, owner validates, pick" fillcolor="#202325" color="#2a2e33" fontcolor="#ffffff"]
+    output [label="🎨 OUTPUT: Rendered deck & demo plan" fillcolor="#14171c" color="#fcaf3b" fontcolor="#fcaf3b" penwidth=3]
+
+    input -> s1 -> s2 -> s3 -> s4 -> s5 -> output
+}
