@@ -191,3 +191,34 @@ The agent maintains a panel of judge personas that review every artefact. Defaul
 6. Render final deck if not already done.
 7. Optional: git commit artefacts via user prompt.
 8. Update state to completed, write final audit entry.
+
+
+### Phase 6 — Demo & narrative
+
+1. LLM defines the thin demo (smallest thing we build for the "wow" moment).
+2. LLM writes a 3-minute script with second-by-second timestamps.
+3. LLM writes a 30-second elevator pitch.
+4. LLM generates 8-12 judge Q&A pairs.
+5. LLM generates a risk register (5-8 risks).
+6. Call `agent.demo_plan.write_demo_plan` with the artefacts_dir and the DemoPlan.
+7. Write audit + mark complete.
+
+### Phase 7 — Deck & market research
+
+1. LLM + web research: market size (TAM/SAM/SOM), trends, buyer personas.
+2. Call `agent.market.write_market`.
+3. LLM + web research: direct + adjacent competitors, positioning, moat.
+4. Call `agent.market.write_competition`.
+5. LLM generates business model canvas (revenue, pricing, GTM, defensibility).
+6. Call `agent.market.write_business_model`.
+7. Call `agent.deck.compile_deck_md` to produce `07_deck.md`.
+8. Call `agent.deck.render_deck` to render the final deck.
+9. Write audit + mark complete.
+
+### Phase 8 — Final review
+
+1. LLM writes a one-page summary (pitch, risks, differentiators, panel dissent, next steps).
+2. Write `08_summary.md`.
+3. Per-judge: thumbs up/down + "what would change my mind".
+4. Offer optional: commit artefacts to git.
+5. Write audit + mark complete.
