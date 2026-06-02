@@ -1,49 +1,34 @@
-You are planning the live demo for the chosen solution. Read the chosen
-solution from `artefacts/05_owner_pick.md`.
+You are planning a 3-minute live demo. Read `artefacts/05_owner_pick.md`.
 
-Step 1 — Thin demo definition:
-Define the smallest thing we can build that demonstrates the "wow" moment.
-What's the input? What does the operator see? What's the output? What's the
-one moment that makes the room lean forward? Write 2-3 sentences.
+**Knock-off question:** "What's the ONE thing the room leans forward for?"
 
-Step 2 — 3-minute demo script:
-Write a time-cued script with these beats:
-- 0:00–0:20 — Cold open: one sentence that hooks the room. (Example: "3 seconds
-  for a decision lives matter. This is what 3 seconds looks like.")
-- 0:20–0:40 — Problem setup: what's the pain, who feels it, why now.
-- 0:40–2:00 — Live demo: walk through the workflow. "Here's the raw feed.
-  Watch what happens in 3 seconds." Narrate what's happening on screen.
-- 2:00–2:40 — How it works under the hood (1-2 slides max).
-- 2:40–3:00 — Closing: what's next, who we need, call to action.
+No brand exercise. No polished script reading. The demo is about signal.
+Everything else is noise.
 
-Use the format: `[0:00] Cold open line.` Each beat is one timestamped line.
-Minimum 10 beats.
+Step 1 — What the operator sees (2-3 lines, max):
+  Input? Output? The moment that makes them lean forward? What's the
+  "before" and "after" on the screen? No jargon.
 
-Step 3 — 30-second elevator pitch:
-One paragraph, no jargon, that a non-technical person can repeat.
-Example: "Commanders in multi-domain operations drown in data. Our dashboard
-processes feeds from air, land, and naval assets and shows the critical threat
-in under 3 seconds — with an AI-recommended course of action. Think of it as
-Waze for the battlefield."
+Step 2 — 3-minute script (minimum 10 beats, timestamped):
+  0:00 — Cold open. One sentence. Kill the hook.
+  0:20 — Problem. Who feels this? What's the cost?
+  0:40 — Demo. Walk through the workflow. "Here's the raw feed. Watch."
+  2:00 — How it works. 30 seconds. 1 slide max. The operator doesn't
+         care about your architecture — they care about what it does.
+  2:30 — Kill chain position. Where does this fit in F2T2EA?
+  2:45 — Close. What's next. What you need.
+  Format: `[M:SS] Text.`
 
-Step 4 — Q&A prep:
-Panel review: each judge gives 1-3 hard questions they'd ask during the live demo.
-Then generate concise answers (2-3 sentences each).
-Minimum 8 Q&A pairs.
+Step 3 — Elevator pitch (one paragraph, ≤80 words). Colonel can repeat it.
 
-Step 5 — Risk register:
-Identify 5-8 things that could go wrong during the demo or project.
-For each: what, likelihood (high/medium/low), impact (high/medium/low), mitigation.
-Include at least: "demo crashes on stage", "judge doesn't know the domain".
+Step 4 — Q&A prep (minimum 8 pairs). Each judge gives 1-3 hard questions.
+  Answer each in 2-3 sentences. No hedging.
 
-IMPORTANT — Pre-mortem (must include this as the last entry):
-"It's Sunday at 3pm. The judges just announced the winners. You didn't win.
-Why not? Be brutally honest." Write this as a risk entry titled "Pre-mortem:
-why we lost." This is the most important entry in the register.
+Step 5 — Risk register (5-8 entries). Format: risk | likelihood | impact | mitigation.
+  Must include:
+  - "Demo crashes on stage"
+  - "Judge doesn't know the domain"
+  - "Pre-mortem: It's Sunday 3pm. You lost. Why?"
+  - "Adversary countermeasure: how Volkov defeats this in 6 months"
 
-IMPORTANT — Adversary countermeasure (must include this as an entry):
-Load the `red-team-adversary` judge's YAML. Ask: "If I were the adversary, how
-would I defeat this solution in 6 months?" Write this as a risk entry titled
-"Adversary countermeasure: how the enemy defeats this."
-
-Build `agent.demo_plan.DemoPlan` and write via `agent.demo_plan.write_demo_plan()`.
+Build `agent.demo_plan.DemoPlan`. Write via `agent.demo_plan.write_demo_plan()`.

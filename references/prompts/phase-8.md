@@ -1,13 +1,11 @@
-You are producing the final summary. Read all artefacts from phases 0-7.
+One-page summary. Colonel's 30-second read. No fluff.
 
-Write a one-page summary covering:
-1. One-paragraph project pitch (3-4 sentences, no jargon).
-2. Top 3 differentiators (what makes this better/different/faster than alternatives).
-3. Top 3 risks (what could kill this, and why it won't).
-4. Next-48-hours action list (3-5 concrete tasks).
+1. Pitch (3-4 lines, no jargon). If a colonel can't repeat it, rewrite it.
+2. Differentiators (3 bullets). What makes this better/different/faster. No adjectives.
+3. Risks (3 bullets). What kills this. Why it won't.
+4. Next 48h (3-5 concrete tasks). "Build X" not "Improve the demo."
 
-Panel verdict: each judge gives 👍 or 👎 with one-line "what would change my mind."
-Record all verdicts, including dissents.
+Panel: each judge 👍/👎 with one line. Record dissents. Unanimous = suspicious.
 
-Build `agent.summary.Summary` with `JudgeVerdict` objects and write via
+Build `agent.summary.Summary` with `JudgeVerdict` objects, write via
 `agent.summary.write_summary()` to `artefacts/08_summary.md`.

@@ -1,72 +1,36 @@
-You are generating solution ideas. Read the chosen sub-problem from
-`artefacts/03_chosen_sub_problem.md`.
+You are generating solution ideas. Read `artefacts/03_chosen_sub_problem.md`
+and the `## Competitive Landscape` section from `artefacts/02_candidate_problem.md`.
 
-Also read `artefacts/02_candidate_problem.md` `## Competitive Landscape`
-section — you know who else is in this space. Use that knowledge to
-generate ideas that exploit the gaps, not ideas that compete head-on
-with fielded systems.
+**Knock-off question:** "What exists? What's the gap? What can we build in 12 hours
+that's better, cheaper, or different enough to matter?"
 
-IMPORTANT: You MUST generate at least 20 distinct ideas. Use ALL of these
-techniques to push past obvious answers:
+Start by killing the first 5 obvious ideas. Write them. Then cross them out.
+The first ideas are always the ones everyone else thinks of. What's next?
 
-Technique 1 — SCAMPER (3 ideas):
-  Substitute / Combine / Adapt / Modify / Put to another use / Eliminate / Reverse
+Generate at least 20 distinct ideas. Use these 8 techniques. No fluff — one line
+per idea.
 
-Technique 2 — What would X do? (3 ideas):
-  Palantir, Anduril, Skydio, a 16-year-old with a Raspberry Pi, a frontline operator
+Technique 1 — SCAMPER (3): Substitute / Combine / Adapt / Modify / Eliminate / Reverse
+Technique 2 — What would X do? (3): Palantir, Anduril, a 16-year-old with an RPi, a Ukrainian drone op
+Technique 3 — 10X (3): Unlimited budget/data/time. Moonshot.
+Technique 4 — Constraint removal (3): No latency. Unlimited compute. Perfect data.
+Technique 5 — Anti-solution (3): The worst possible idea. Reveals what to avoid.
+Technique 6 — Analogy (3): Video game. Cooking recipe. Dating app. Logistics problem.
+Technique 7 — Wildcard (2+): Free-form.
+Technique 8 — Gap exploit (2+): Target ONLY the gap identified in Competitive Landscape.
 
-Technique 3 — 10X version (3 ideas):
-  If you had 100x the budget/time/data. What's the moonshot?
+Output: I-001: [one line]. No essays. Dedupe via `agent.ideation.dedupe_ideas(ideas, 0.7)`.
 
-Technique 4 — Constraint removal (3 ideas):
-  No latency constraints. Unlimited compute. Perfect data. Hardware costs are zero.
+## Innovation Competitive Scan (after dedup, before panel)
 
-Technique 5 — Anti-solution (3 ideas):
-  Deliberately bad ideas that reveal a hidden insight. "The absolute worst way to
-  solve this would be... which tells us we should..."
+For each unique idea (~8-10), run 1-2 Exa web searches. For each, answer with
+military directness:
+  1. "Exists?" (yes/partially/no)
+  2. "Who?" (name, year if yes)
+  3. "Difference?" (one line — what's our edge or why bother)
+  4. "Why not?" (if no — too hard / nobody thought of it / no market)
 
-Technique 6 — Analogy transfer (3 ideas):
-  How would you solve this if it were: a video game, a cooking recipe, a logistics
-  problem, a dating app?
+Panel rates 1-5 informed by the competitive signal. Ideas rated 1-2 must have
+an explanation. No "interesting" — tell me WHY.
 
-Technique 7 — Wildcard (2+ ideas):
-  Free-form: anything else novel.
-
-TECHNIQUE 8 — Gap exploit (2+ ideas):
-  From the Competitive Landscape, what's the gap identified?
-  ("What's still unsolved?") Generate ideas that EXCLUSIVELY target
-  that gap. These are your highest-value ideas — the ones that don't
-  compete with fielded systems.
-
-Output format: I-001: [One-line idea description]
-
-Then run `agent.ideation.dedupe_ideas(ideas, threshold=0.7)` to remove near-dupes.
-
----
-
-## Innovation Competitive Scan (runs after dedup, before panel rating)
-
-For each UNIQUE idea after dedup (the ~8-10 that survive), run 1-2
-quick web searches (Exa MCP or built-in):
-
-  "[idea one-liner] existing solution deployed company 2024 2025"
-
-Goal: answer for each idea:
-  1. "Does something like this already exist?" (yes / partially / no)
-  2. "If yes — who built it? When? What's different about our version?"
-  3. "If partially — what's the gap between what exists and our idea?"
-  4. "If no — why not? (Too hard? Nobody thought of it? No market?)"
-
-Output: For each idea, add a 1-2 line `competitive_signal` to its
-`Idea` object (use the `judge_rejections` field as a carrier, or
-add a note to the idea's description).
-
-THE PANEL MUST SEE THIS before they rate. Each judge reads the idea
-AND its competitive signal. They use this to inform their 1-5 rating.
-
-Panel review: each judge rates every unique idea 1-5 with one-line reasoning.
-Ideas rated 1-2 require an explanation. Collect rejections in
-`judge_rejections`.
-
-Build `agent.ideation.Idea` objects with rating, panel_ratings, and
-judge_rejections. Sort by rating descending. Top 5 + "judges hated this" section.
+Collect in `judge_rejections`. Sort descending. Top 5 + "judges hated this."

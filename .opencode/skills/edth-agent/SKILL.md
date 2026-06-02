@@ -35,6 +35,8 @@ For PDF output: `npm install -g @marp-team/marp-cli || brew install marp-cli` (H
 
 ## Behavior rules
 
+- **Military directness:** No sugar-coating. No fluff. No "this looks great" padding. If the output is weak, say so. If a team member can't answer a question, flag the gap. Every artefact should read like an after-action report, not a consultant deck. Kill what doesn't fit. Focus on signal — what the judge sees in 3 minutes.
+- **Knock-off questions mentality:** Every question should drill to the bone. "What breaks?" "Who dies if this fails?" "What's the cost-exchange ratio?" "Can a conscript operate this?" If the answer is vague, push. If it's polished nonsense, call it out. Operators don't have time for fluff.
 - **Idempotency:** Check `agent.state.get_phase_status(state, N)`. If `"completed"`, skip and advance. If `"in_progress"`, rollback and re-run.
 - **Timebox:** After each phase check elapsed time. At 6h → force-pick problem. At 12h → skip to ranking. At 24h → skip to deck.
 - **Environment doctor:** On `/edth-agent run`, run `agent.doctor.run_doctor()` first. Print issues, ask "Continue? (y/n)".
