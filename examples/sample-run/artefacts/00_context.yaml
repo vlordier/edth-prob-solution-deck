@@ -1,0 +1,21 @@
+hackathon:
+  name: "EDTH Munich 2025"
+  theme: "Defense tech / dual-use"
+  tracks: ["C-UAS", "Autonomy", "EW", "UUV", "USV"]
+  judging_rubric:
+    impact: 0.30
+    innovation: 0.25
+    execution: 0.25
+    presentation: 0.20
+team:
+  size: 4
+  strengths: ["ML/CV", "frontend", "signal_proc"]
+  weaknesses: ["hardware", "maritime domain"]
+constraints:
+  time_budget_hours: 48
+  deliverable: "deck + thin demo"
+agent:
+  owner_mode: sim
+  persona: edth-judge
+  panel_mode: expanded
+  aggregation_mode: borda
