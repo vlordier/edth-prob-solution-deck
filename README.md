@@ -77,6 +77,7 @@ All commands in OpenCode chat:
 | Command | Does |
 |---|---|
 | `/edth-agent dry-run` | 30s smoke test — full pipeline, zero interaction |
+| `/edth-agent team` | Interview each member — skills, blind spots, roles |
 | `/edth-agent run` | Start or resume the workflow |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |

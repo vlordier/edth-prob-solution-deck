@@ -34,6 +34,7 @@ npm install -g @marp-team/marp-cli || brew install marp-cli
 If neither is available, the HTML fallback works fine — mention this and continue.
 
 ## Behavior rules
+- Before Phase 0 (Onboarding), run **Team Discovery** (`/edth-agent team`). This is strongly recommended. If the user says "skip" or `--skip`, write a minimal stub and proceed.
 - Every phase has a concrete prompt template below. Execute the prompt verbatim. Do not improvise.
 - After each phase output, run `/edth-agent validate --quiet` to self-check. Fix issues before continuing.
 - In `owner_mode: real`, ask the user "Approve? (y/edit/redo)" after writing each artefact. In `owner_mode: sim`, auto-continue.
@@ -57,6 +58,8 @@ If neither is available, the HTML fallback works fine — mention this and conti
 | `/edth-agent rerun <N>` | Re-execute phase N, overwriting its artefact |
 | `/edth-agent dry-run` | Auto-run phases 0–7 with sim owner + condensed panel. No interaction. ~30s. |
 | `/edth-agent skip-to <N>` | Generate minimal stub artefacts for phases 0..N-1, jump to phase N |
+| `/edth-agent team` | Interview each team member — skills, experience, blind spots, dynamics. Writes `artefacts/team_profile.md`. |
+| `/edth-agent team --skip` | Skip team discovery (not recommended). Writes a minimal stub. |
 | `/edth-agent validate` | Scan all artefacts for completeness and consistency. Report issues. |
 | `/edth-agent validate --quiet` | Same, but only report if issues found (used internally after each phase) |
 | `/edth-agent reset` | Wipe `artefacts/` and start over |
@@ -713,6 +716,135 @@ Quality rules:
 4. Panel: final verdicts. Record dissent.
 5. Final deck re-render check.
 6. Write audit. Mark run complete. State: `current_phase: 9`, `status: completed`.
+
+---
+
+## Team Discovery
+
+Before anything else. The agent must understand who is in the room
+and what they can actually deliver in 48 hours. This writes
+`artefacts/team_profile.md` — a shared memory file used throughout
+the hackathon to inform problem selection, role assignment, and
+solution scoping.
+
+### Team Discovery Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are interviewing a hackathon team before they choose a problem.
+Be blunt. Be thorough. You only have their attention for 3 minutes per person.
+This is not a job interview — they volunteered for this. Your job is to surface
+what they can ACTUALLY build in 48 hours, not what sounds impressive.
+
+IMPORTANT: Go one person at a time. Do NOT move to the next person until
+the current one has passed the word-count check.
+
+STEP 1 — Self-introduction (one person at a time):
+Ask: "Introduce yourself. What have you built before that's relevant to
+this hackathon? What skills, tools, frameworks, or domain knowledge do you
+bring? Be specific — names of projects, languages, technologies. This is a
+48-hour sprint, not a job interview. What can you actually ship?"
+
+After they respond, run `agent.team.word_count(response)`:
+  - If < 50 words: "That's a start but I need more. Specifically: what
+    have you BUILT? What languages and frameworks? What's the most impressive
+    thing you've shipped, and what was your exact role in it? Give me details."
+  - If ≥ 50 words: proceed to Step 2.
+
+STEP 2 — Quick-fire drill (5 questions, A/B/C, one at a time):
+Pick 5 questions from this bank. Adapt based on what they said in Step 1.
+Ask one at a time. They must pick A, B, or C. No hedging.
+
+Pick from:
+  1. Build speed: "You've got 48 hours. Are you: A) 'I code fast, ship
+     messy, iterate' B) 'I plan carefully, write clean code, have decent
+     velocity' C) 'I spend a lot of time thinking before I write anything'"
+  2. Stack confidence: "With your primary language/framework, are you:
+     A) 'I can build anything from scratch without docs' B) 'I'm solid,
+     need docs for the tricky stuff' C) 'I'm learning as I go and I'll
+     need help'"
+  3. Demo chops: "For the live 3-min demo: A) 'I love presenting, put me
+     on stage' B) 'I can do it if nobody else will' C) 'Please don't make
+     me present'"
+  4. Domain depth: "In the defense/military domain: A) 'I've worked on
+     defense systems before' B) 'I've read about it, comfortable with
+     the vocabulary' C) 'This is brand new to me'"
+  5. Collaboration style: "In a tight deadline: A) 'I pair program and
+     share work constantly' B) 'I prefer clear task boundaries, then
+     work solo' C) 'I need to own a feature end-to-end to do my best'"
+  6. Stress tolerance: "When things break at 3am: A) 'I debug calmly
+     and systematically' B) 'I stress a bit but push through'
+     C) 'I need someone to help me triage'"
+  7. Hardware/edge: "With physical hardware or edge devices (Jetson, RPi,
+     sensors): A) 'I've deployed to real hardware' B) 'I've tinkered
+     with it but not in production' C) 'Software-only, never touched
+     hardware'"
+  8. ML maturity: "With machine learning: A) 'I've trained and deployed
+     models to production' B) 'I've built notebooks and demos'
+     C) 'Novice / I can't contribute to ML work'"
+
+Record all 5 answers immediately after they respond.
+
+STEP 3 — Blind spot check:
+Based on their intro + quick-fire answers, identify 1-3 blind spots.
+Phrase them as observations, not insults. Examples:
+  - "You're strong on frontend but mentioned no backend or ops knowledge —
+    who handles the API if you need one?"
+  - "You said 'I can do ML' but named no specific framework or project —
+    are we talking prototype-in-a-notebook or edge-deployed model?"
+  - "You listed 4 languages — in 48 hours, which ONE do you actually ship in?"
+
+Report the blind spots to the user. Give them one chance to clarify.
+
+STEP 4 — Build the profile:
+Construct an `agent.team.MemberProfile` with:
+  - name (ask if not obvious from intro)
+  - intro (raw text)
+  - skills (list, extracted)
+  - built (list of specific projects/things they made)
+  - experience_years (if stated)
+  - self_assessment (their own framing)
+  - blind_spots (from step 3)
+  - quick_answers (dict of question → answer)
+
+STEP 5 — Repeat for next person:
+Go to Step 1 for the next team member. Do this for every person on the
+team (ask "how many of you are there?" at the start).
+
+After the last person:
+  - Ask: "Are there any skills or experience I missed that someone else
+    brings?" Let each person add anything they thought of.
+  - Summarize: the team's collective strengths and gaps.
+
+STEP 6 — Team dynamics:
+Ask the group:
+  - "Who's doing the 3-minute pitch in front of the judges?"
+  - "Who owns the live demo — the one person who makes sure it works?"
+  - "Who's building the core? If that's multiple people, how do you split?"
+  - "Who owns the deck, the market research, the business model?"
+
+Record in `agent.team.TeamDynamics`. If multiple people volunteer for the
+same role, let them decide — your job is to surface the conversation,
+not to arbitrate (unless they're clearly stuck).
+
+STEP 7 — Write the profile:
+Build an `agent.team.TeamProfile` and call
+`agent.team.write_team_profile(artefacts_dir, profile)`.
+Output goes to `artefacts/team_profile.md`.
+
+Tell the user: "Team profile saved to `artefacts/team_profile.md`.
+This will inform every phase — problem selection, scoping, and who
+does what. Re-run `/edth-agent team` if the team changes."
+```
+
+### Implementation steps
+
+1. Ask how many team members, then go person by person using the prompt template.
+2. For each person: intro → word count check (≥50, ask for more if <50) → 5 quick-fire A/B/C → blind spots → profile.
+3. After all members: team dynamics (pitcher, demo, builder, deck).
+4. Write via `agent.team.write_team_profile()`.
+5. Write audit entry.
 
 ---
 
