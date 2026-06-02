@@ -142,6 +142,8 @@ def test_skill_md_has_required_sections() -> None:
         "## Dry-run mode",
         "## Skip-to mode",
         "## Validate command",
+        "## Kill Chain Mapping",
+        "## One-Sentence Clarity",
     ]
     for section in required:
         assert section in content, f"SKILL.md missing section: {section}"

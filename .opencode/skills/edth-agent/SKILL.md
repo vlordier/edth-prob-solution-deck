@@ -47,6 +47,7 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 
 ## Behavior rules
 
+- **Timebox awareness:** After every Phase N (N ≥ 1), assess wall-clock time since `state["started_at"]`. If >6h have passed and current_phase < 3, print: `⏰ 6+ hours elapsed. Force-pick a problem now? (y)`. If >12h and current_phase < 5, print: `⏰ 12+ hours. You need 12h+ to build. Skip to ranking? (y)`. If >24h and current_phase < 7, print: `⏰ 24+ hours. Build time shrinking. Skip to deck? (y)`. Respect the answer.
 - **Idempotency:** Before running any phase, check `agent.state.get_phase_status(state, N)`. If `"completed"`, print `✅ Phase {N} already completed — skipping.` and advance to the next pending phase. Only re-run completed phases on explicit `/edth-agent rerun N`. If `"in_progress"`, print `⚠️  Phase {N} was interrupted. Rolling back...`, call `rollback_phase(state, N)`, then proceed.
 - **Environment doctor:** On `/edth-agent run` (not dry-run, not team, not sheet), run `agent.doctor.run_doctor()` before any phase work. Print any issues and ask "Continue anyway? (y/n)". Verifies: Python version, agent imports, deps, CSV presence, artefacts writability, judge library, persona default.
 - **Shell safety:** Never pass unsanitized user input into shell. Quote all paths: `open 'artefacts/07_deck.html'`.
@@ -57,7 +58,7 @@ For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli
 - **Lint after code:** `uv run ruff check agent/ tests/ --fix && uv run ruff format agent/ tests/`
 - **Mark in_progress:** Before phase work, `mark_phase_in_progress(state, N)`. On failure, `rollback_phase(state, N)`.
 - **Validate after phase:** `agent.validate.run_validation(artefacts_dir, quiet=True)`. Fix issues before continuing.
-- **Time tracking:** `⏱  {elapsed:.0f} min, {remaining} phases remaining.`
+- **Time tracking:** After each phase: `⏱  {elapsed:.0f} min, {remaining} phases remaining.` Then apply the timebox rule above.
 - **Rerun snapshots:** Copy old artefact to `artefacts/snapshots/<file>.bak.<timestamp>` before overwriting.
 - **Phase 0 prompt template.** Execute verbatim. Every other phase has a prompt template — execute each verbatim.
 - In `owner_mode: real`, ask "Approve? (y/edit/redo)". In `owner_mode: sim`, auto-continue.
@@ -335,97 +336,14 @@ Quality rules:
 7. Print: `⚙️  Phase 2 — Elicit: re-scoring candidates...`
 8. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
 9. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
-10. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
-11. Print: `✅ Phase 2 — Elicit: problem {pid} chosen, panel of {N} judges locked.`
-12. `agent.mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
-13. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-14. Print time.
-15. Write audit.
-16. Ask: "Approve? (y/edit/redo)".
-
----
-
-## Question Sheet (`/edth-agent sheet`)
-
-Generates a printable Mom Test interview guide — a reference document to
-take into problem-owner conversations. Separate from the interactive Q&A
-flow. Can be called at any time after Phase 1 completes.
-
-### Question Sheet Prompt Template
-
-Execute this prompt verbatim:
-
-```
-You are generating a Mom Test question sheet for interviewing a MILITARY
-problem owner (pilot, drone operator, JTAC, signals analyst, tank commander,
-UUV navigator, etc.). Read `artefacts/01_triage.md` to get the top clusters.
-
-CRITICAL: these are soldiers and operators, not procurement officers.
-They don't talk about "ROI" or "willingness to pay." They talk about
-mission failure, lost time, dead friends, and workarounds held together
-with duct tape. The question sheet must reflect this.
-
-Step 1 — Mom Test rules (6 rules, adapted for operators):
-  1. Talk about their mission, not your solution.
-  2. Ask about specific sorties, patrols, or engagements — "the last time
-     this failed, what happened?"
-  3. Never ask "would this help?" — they'll say yes to be polite. Ask
-     "what do you use today and what's wrong with it?"
-  4. Look for concrete cost: seconds lost, missions aborted, people put at
-     risk, equipment damaged, sorties scrubbed.
-  5. "That sounds like a good idea" = they're being polite. Real signal:
-     "Last month we lost two birds because we couldn't see them."
-  6. If they can't name a specific mission where this would have changed
-     the outcome, the problem may not exist.
-
-Step 2 — Interviewer tips (5 tips, operator-specific):
-  - Start with: "Walk me through your last shift / sortie / patrol where
-    [cluster topic] was a factor."
-  - If they say "this happens all the time," ask: "How many times last week?"
-    Operators count things — if they can't give you a number, it's not
-    happening all the time.
-  - Bad answer: "Yeah, an AI system would definitely improve things."
-    Good answer: "Last Tuesday we had 3 drones come in. I spotted 2 on
-    thermal. The third one I never saw. It hit the ammo truck."
-  - Ask about the CO's reaction: "What did your commander say after it
-    happened? What's the operational pressure from above?"
-  - End with: "What's the one piece of kit you wish existed but doesn't?"
-
-Step 3 — Per cluster: 3 DO-ask questions + 2 DON'T-ask questions
-  For each of the top 3 clusters, generate questions adapted to the
-  operational domain (UAV pilot, tank crew, EW operator, etc.).
-
-  DO-ask pattern:
-    - "Tell me about the last time [problem] happened during a mission."
-    - "What's your current kit / workaround, and what's its failure mode?"
-    - "If you had [solution] last month, which specific mission changes?"
-
-  DON'T-ask pattern:
-    - "Would [solution] make your job easier?" → Leading. Everyone says yes.
-    - "On a scale of 1-10, how big is this problem?" → Abstract. Operators
-      don't think in scales, they think in outcomes.
-
-  Build these as `agent.sheet.GoodQuestion` and `agent.sheet.BadQuestion`.
-
-Step 4 — Answer signal rubric (operator version, 4 rows):
-  | Concrete incident with outcome (casualties, equipment loss, mission abort) | STRONG — real problem, lives at stake |
-  | Vague "it happens a lot" with no specific date or outcome | WEAK — may be tribal lore, not validated |
-  | "That's interesting" / "good idea" / "keep me posted" | ANTI-SIGNAL — polite brush-off |
-  | "Here's the after-action report. I can introduce you to the squadron CO." | STRONG — they trust you enough to escalate |
-
-Build a `agent.sheet.QuestionSheet` and write via
-`agent.sheet.write_question_sheet(artefacts_dir, sheet)`.
-Output goes to `artefacts/question_sheet.md`.
-```
-
-### Implementation steps
-
-1. Print: `⚙️  Question Sheet — generating...`
-2. Verify Phase 1 is completed (`artefacts/01_triage.md` exists).
-3. Execute the prompt template above.
-4. Write via `agent.sheet.write_question_sheet()`.
-5. Print: `✅ Question sheet saved to artefacts/question_sheet.md.`
-6. Write audit entry.
+10. **Second team check:** After Phase 2 (problem chosen), cross-reference `artefacts/team_profile.md` against the chosen problem. Print: `🔍  Capability check: this problem requires [skills]. Your team has [gaps].` Specifically: check hardware requirement vs team hardware answers, ML requirement vs ML maturity, domain depth vs team domain knowledge. If major gaps exist, print: `⚠️  Warning: your team may not have the skills for this problem. Consider picking a different candidate. Continue? (y)`
+11. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
+12. Print: `✅ Phase 2 — Elicit: problem {pid} chosen, panel of {N} judges locked.`
+13. `agent.mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
+14. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
+15. Print time + timebox check.
+16. Write audit.
+17. Ask: "Approve? (y/edit/redo)".
 
 ---
 
@@ -480,8 +398,49 @@ Quality rules:
 7. User picks 1. Record via `set_decision("chosen_sub_problem_id", ...)`.
 8. `agent.mark_phase_completed(state, 3, artefacts_dir / "03_chosen_sub_problem.md")`. Save state.
 9. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
-10. Print time.
+10. Print time + timebox check.
 11. Write audit. Ask: "Approve? (y/edit/redo)".
+
+---
+
+## Kill Chain Mapping
+
+Runs after Phase 3 (sub-problem chosen). Not a separate phase — a mandatory
+1-minute check that writes a short paragraph into `artefacts/03_chosen_sub_problem.md`.
+
+### Kill Chain Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are mapping the chosen sub-problem to the military kill chain.
+Read `artefacts/03_chosen_sub_problem.md` for the chosen sub-problem
+and `artefacts/02_candidate_problem.md` for the larger problem context.
+
+The kill chain has 6 links:
+  Find → Fix → Track → Target → Engage → Assess
+  (detect) (identify) (follow) (decide) (act) (evaluate)
+
+Answer these 3 questions in 1-2 sentences each:
+
+1. Which link(s) does this solution sit in? Be precise.
+2. What happens in the link BEFORE yours? If that link fails, does your
+   solution still matter? (If yes, why? If no, what's the dependency?)
+3. What happens in the link AFTER yours? Who consumes your output, and
+   how fast do they need it?
+
+Append this as a new section `## Kill Chain` to the bottom of
+`artefacts/03_chosen_sub_problem.md`. Do NOT overwrite the file —
+append to it.
+```
+
+### Implementation steps
+
+1. Print: `⚙️  Kill Chain — mapping to F2T2EA...`
+2. Execute prompt template above.
+3. Append output to `artefacts/03_chosen_sub_problem.md`.
+4. Print: `✅ Kill chain mapping appended to artefacts/03_chosen_sub_problem.md.`
+5. Write audit entry.
 
 ---
 
@@ -660,6 +619,16 @@ Identify 5-8 things that could go wrong during the demo or project.
 For each: what, likelihood (high/medium/low), impact (high/medium/low), mitigation.
 Include at least: "demo crashes on stage", "judge doesn't know the domain".
 
+IMPORTANT — Pre-mortem (must include this as the last entry):
+"It's Sunday at 3pm. The judges just announced the winners. You didn't win.
+Why not? Be brutally honest." Write this as a risk entry titled "Pre-mortem:
+why we lost." This is the most important entry in the register.
+
+IMPORTANT — Adversary countermeasure (must include this as an entry):
+Load the `red-team-adversary` judge's YAML. Ask: "If I were the adversary, how
+would I defeat this solution in 6 months?" Write this as a risk entry titled
+"Adversary countermeasure: how the enemy defeats this."
+
 Build `agent.demo_plan.DemoPlan` and write via `agent.demo_plan.write_demo_plan()`.
 ```
 
@@ -766,15 +735,16 @@ Step 4 — Generate deck slides:
 For each slide, write Marp-flavored markdown (front-matter at top, `---` as
 slide separator, `<!-- _class: lead -->` for title slides).
 
-Slide order:
+Slide order (MilTech priority):
 1. Cover: project name + hackathon + team + date
-2. Problem: one-liner + why it matters + who feels pain + why now
-3. Solution: one-liner + how it works + key differentiators (table)
-4. Market: TAM/SAM/SOM + trends + buyer personas
-5. Competition: table + positioning + moat
-6. Business model: revenue + pricing + GTM + defensibility
-7. Demo: what you'll see + key metrics
-8. Thank you
+2. Problem: battlefield pain + why it matters + one-sentence pitch from Phase 5.5
+3. Solution: one-liner + how it works + kill chain position
+4. Competition / deployed capability: what exists today? why is yours different? TRL comparison (table)
+5. Deployment path: how does this reach the battlefield? acquisition pathway + timeline
+6. Business model: revenue, pricing, GTM (if dual-use)
+7. Market: TAM/SAM/SOM + trends (only if commercially relevant — otherwise skip)
+8. Demo: what you'll see + key metrics
+9. Thank you
 
 Save to `artefacts/07_deck.md`. Then render via `agent.deck.render_deck()` which
 auto-detects Marp CLI, python-pptx, or HTML fallback.
@@ -843,6 +813,48 @@ Quality rules:
 10. Run `agent.validate.run_validation(artefacts_dir, quiet=True)`. Report issues.
 11. Print time.
 12. Write audit. Ask: "Approve? (y/edit/redo)".
+
+---
+
+## One-Sentence Clarity
+
+Runs after Phase 5 (solution ranked). Forced moment of clarity before you
+build or plan a demo. Writes to the console — not a separate artefact.
+
+### Clarity Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are forcing the team to state their project in ONE sentence.
+
+Read `artefacts/05_owner_pick.md` for the chosen solution.
+Read `artefacts/team_profile.md` for the team's capabilities.
+
+Ask the team directly:
+
+  "In one sentence — what are you building? No jargon. Something
+  your colonel can repeat at a briefing. 20 words max."
+
+If they can't do it in 20 words, ask again. If they use jargon
+("multi-domain AI-augmented decision support framework"), say:
+
+  "That's jargon. Try again. Imagine you're explaining this to
+  a tank commander who's been awake for 36 hours."
+
+Once you have a clean one-sentence pitch, say:
+
+  "Print this. Tape it to your monitor. Everything you build in
+  the next 12 hours serves this sentence. If a task doesn't serve
+  this sentence, drop it."
+```
+
+### Implementation steps
+
+1. Print: `⚙️  One-Sentence Clarity — stating the project...`
+2. Execute prompt template above.
+3. Do NOT write a file. This is a live interactive check only.
+4. Write audit entry (record the final sentence).
 
 ---
 
