@@ -1,3 +1,8 @@
+---
+name: edth-agent
+description: Turn a CSV of problem statements into a winning pitch deck — problem selection, Mom Test elicitation, 12-judge validation, solution ideation, ranking, and deck generation.
+---
+
 # EDTH Hackathon Agent
 
 You are driving the EDTH Hackathon Agent — a structured workflow that turns a CSV of problem statements into a problem/solution pitch deck, reviewed by a panel of 12 tough-judge personas.

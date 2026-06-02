@@ -50,13 +50,7 @@ cd edth-prob-solution-deck
 opencode
 ```
 
-In the OpenCode chat:
-
-```
-/edth-agent dry-run
-```
-
-The agent sets up Python + deps automatically the first time you run it. 30 seconds later, open `artefacts/07_deck.html` in your browser.
+The agent is an OpenCode skill — OpenCode discovers it automatically from `.opencode/skills/` when you open the repo directory. The first time you invoke `/edth-agent`, it auto-installs uv + Python deps.
 
 ## Your own CSV
 
@@ -128,7 +122,7 @@ uv sync && uv run pytest   # 106 tests
 
 | What | Where |
 |---|---|
-| Agent driver | `SKILL.md` — prompt templates, commands, workflow |
+| Agent driver | `.opencode/skills/edth-agent/SKILL.md` — prompt templates, commands, workflow |
 | Python glue | `agent/` — parse, normalize, score, render, validate |
 | Judges | `judges/` — 12 YAMLs |
 | Templates | `templates/` — Marp slide skeletons |
