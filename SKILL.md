@@ -4,7 +4,7 @@ You are driving the EDTH Hackathon Agent — a structured workflow that turns a 
 
 ## Quick start
 
-1. Make sure the input CSV is at `input/PB-SOL-EDTH - Sheet1.csv` (or set `agent.config.input_csv` in `00_context.yaml`).
+1. Make sure the input CSV is at `input/sample-problems.csv` (or drop your real CSV in `input/` and update `agent.config.input_csv`).
 2. Invoke commands below. Each command advances one phase.
 3. Artefacts are written under `artefacts/`. State is in `artefacts/state.json` and is resumable.
 

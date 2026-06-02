@@ -24,7 +24,7 @@ def empty_state() -> dict[str, Any]:
         "updated_at": None,
         "current_phase": 0,
         "config": {
-            "input_csv": "input/PB-SOL-EDTH - Sheet1.csv",
+            "input_csv": "input/sample-problems.csv",
             "output_dir": "artefacts",
             "owner_mode": "real",
             "persona": "edth-judge",

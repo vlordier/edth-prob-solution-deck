@@ -28,3 +28,7 @@ examples/sample-run/artefacts/audit/
 # Local config
 .env
 .env.local
+
+# Real input data (keep local, not committed)
+input/*real*.csv
+input/PB-SOL-EDTH*.csv

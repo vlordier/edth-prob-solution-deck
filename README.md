@@ -14,7 +14,7 @@ pip install -e ".[dev]"
 ```
 
 ### 2. Place your problem CSV
-Default expects `input/PB-SOL-EDTH - Sheet1.csv`. Edit `hackathons/edth.yaml` to change path.
+Default expects `input/sample-problems.csv` (8 synthetic examples). Replace with your real CSV and update the path via `hackathons/edth.yaml` or `artefacts/00_context.yaml`. Real CSVs in `input/` are gitignored.
 
 ### 3. Run the agent
 From OpenCode chat:
