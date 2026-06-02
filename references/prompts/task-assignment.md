@@ -3,6 +3,9 @@ tasks and assigning them to specific team members.
 
 Read `artefacts/team_profile.md` and `artefacts/05_owner_pick.md`.
 
+Also read `artefacts/team_profile.md` `## Team Equipment` section.
+Equipment availability is a HARD constraint on what tasks are possible.
+
 STEP 1 — Decompose the solution into 5-8 tasks:
 Each task must be:
   - Concrete: "Build the React dashboard with hardcoded feed data" not
@@ -25,16 +28,33 @@ experience, and quick-fire answers best fit:
 For each assignment, write 1 sentence explaining WHY this person fits.
 Quote their team_profile self-intro or quick-fire answer as evidence.
 
+STEP 2.5 — Equipment availability check (per task):
+For each task, check if it requires specific hardware from the equipment
+inventory. Flag constraints:
+  - If the task needs hardware in `### Available` → note "✅ {hardware} available."
+  - If the task needs hardware in `### Accessible` → note "⚠️ Must source {hardware} first. Assign this person to pick it up."
+  - If the task needs hardware in `### Critical Gaps` → mark as GAP with
+    fit_reasoning: "Hardware blocker: team needs {hardware} but none available.
+    Either scope this task out or find an alternative approach that doesn't
+    require {hardware}."
+  - If the task is pure software → note "Laptops sufficient."
+
 STEP 3 — Flag critical gaps:
-If a task requires a skill NOBODY on the team has (e.g. hardware
-deployment, and everyone answered "C) Software-only" on the hardware
-question), mark it as a GAP with fit_reasoning explaining why nobody
-fits. These become the `critical_gaps` in the plan.
+Two types of gaps:
+  a) SKILL gaps: task requires a skill nobody has. Flag as GAP.
+  b) EQUIPMENT gaps: task requires hardware in the Critical Gaps list.
+     Flag as GAP with higher severity — equipment gaps are harder to
+     overcome than skill gaps in a 48h sprint.
 
 STEP 4 — Suggest build order:
 Order the tasks so that dependencies are respected (ML model training
-before deployment, backend API before frontend integration). Output
-as a list of task IDs in recommended order.
+before deployment, backend API before frontend integration). Also:
+  - If a task depends on `### Accessible` hardware, schedule it AFTER
+    the hardware is sourced (add a "Source {hardware}" task at position 1).
+  - If multiple tasks compete for the same hardware (e.g. one Jetson,
+    two people need it), serialize them — don't parallelize.
+
+Output as a list of task IDs in recommended order.
 
 STEP 5 — Write the plan:
 Build `agent.demo_tasks.DemoTask` objects for each task, then a
@@ -43,4 +63,5 @@ Build `agent.demo_tasks.DemoTask` objects for each task, then a
 Output goes to `artefacts/demo_tasks.md`.
 
 Tell the user: "Task assignments saved to `artefacts/demo_tasks.md`.
-Each team member can see exactly what they own and how long it should take."
+Each team member can see exactly what they own, what equipment they
+need, and how long it should take."

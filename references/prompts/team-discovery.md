@@ -83,6 +83,52 @@ After the last person:
     brings?" Let each person add anything they thought of.
   - Summarize: the team's collective strengths and gaps.
 
+STEP 5.5 — Tools & Equipment (group question):
+This step frames what the team can ACTUALLY build given what they have
+access to. Ask the whole group:
+
+"Tell me what you have to work with. Not what you wish you had —
+what's physically in the room or accessible in the next 2 hours:
+
+  1. COMPUTE: What machines do you have? (laptops — what specs?
+     M1/M2/M3? Intel? How much RAM? Any cloud credits — AWS, GCP,
+     Azure? Any GPU access — local or cloud?)
+
+  2. DATA: What data do you have access to? (synthetic datasets
+     provided by the hackathon? public datasets you can download?
+     any pre-trained models or weights you can start from?)
+
+  3. HARDWARE: Any physical devices? (Raspberry Pis, Jetson Nanos,
+     webcams, microphones, SDR dongles, sensors, Arduino boards,
+     3D printers, anything with a USB cable?)
+
+  4. SOFTWARE: What tooling is already installed or installable?
+     (IDEs, frameworks, libraries — anything beyond a browser and
+     a terminal? Any licenses you're bringing?)
+
+  5. NETWORK: What's your connectivity situation? (stable WiFi?
+     mobile hotspot? can you reach package registries — npm, PyPI,
+     Docker Hub? any firewalls or restrictions?)
+
+  6. PRESENTATION: What's available for the 3-minute pitch?
+     (projector? monitor you can connect to? slides template?
+     video recording capability?)
+
+Flag any CRITICAL GAPS — things the team clearly needs but doesn't
+have. Example: 'You're proposing an edge computing solution but
+nobody brought a Jetson or RPi. Can you source one in the next
+2 hours? If not, this constrains which problems you can solve.'
+
+Write the equipment inventory as `equipment` in `artefacts/team_profile.md`
+under a new `## Team Equipment` section with three subsections:
+  - `### Available` (what they have)
+  - `### Accessible` (can get in 2h)
+  - `### Gaps` (what they need but can't get)
+
+This inventory is used in Phase 1 (triage — execution scoring),
+Phase 3 (ROI — dependency risk), and Phase 6 (task assignment —
+hardware availability flags).
+
 STEP 6 — Team dynamics:
 Ask the group:
   - "Who's doing the 3-minute pitch in front of the judges?"

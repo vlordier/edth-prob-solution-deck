@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
+
+from pydantic import BaseModel, Field
 
 
 def word_count(text: str) -> int:
@@ -11,34 +12,39 @@ def word_count(text: str) -> int:
     return len(text.strip().split())
 
 
-@dataclass
-class MemberProfile:
+class MemberProfile(BaseModel):
     name: str
     intro: str  # raw self-introduction (≥50 words enforced at interview time)
-    skills: list[str]  # extracted: "Python", "React", "signal processing", etc.
-    built: list[str]  # things they've built relevant to this hackathon
+    skills: list[str] = Field(default_factory=list)  # "Python", "React", etc.
+    built: list[str] = Field(default_factory=list)  # things they've built
     experience_years: str = ""
-    self_assessment: str = ""  # their own take on what they bring
-    blind_spots: list[str] = field(default_factory=list)  # gaps the agent detects
-    quick_answers: dict[str, str] = field(default_factory=dict)  # A/B/C answers
+    self_assessment: str = ""  # their own take
+    blind_spots: list[str] = Field(default_factory=list)  # gaps the agent detects
+    quick_answers: dict[str, str] = Field(default_factory=dict)  # A/B/C answers
 
 
-@dataclass
-class TeamDynamics:
-    pitcher: str = ""  # who volunteers for the 3-min pitch
-    demo_champion: str = ""  # who drives the live demo
-    builder: str = ""  # who writes the code
-    deck: str = ""  # who owns the deck / market research
+class TeamDynamics(BaseModel):
+    pitcher: str = ""  # 3-min pitch
+    demo_champion: str = ""  # live demo
+    builder: str = ""  # core code
+    deck: str = ""  # deck / market research
     notes: str = ""
 
 
-@dataclass
-class TeamProfile:
+class TeamEquipment(BaseModel):
+    available: list[str] = Field(default_factory=list)  # what they have
+    accessible: list[str] = Field(default_factory=list)  # can get in 2h
+    gaps: list[str] = Field(default_factory=list)  # critical — can't solve without
+    notes: str = ""
+
+
+class TeamProfile(BaseModel):
     members: list[MemberProfile]
-    dynamics: TeamDynamics
-    total_members: int
-    strengths_summary: list[str]  # aggregate
-    gaps_summary: list[str]  # what's missing
+    dynamics: TeamDynamics = Field(default_factory=TeamDynamics)
+    equipment: TeamEquipment = Field(default_factory=TeamEquipment)
+    total_members: int = 0
+    strengths_summary: list[str] = Field(default_factory=list)
+    gaps_summary: list[str] = Field(default_factory=list)
 
 
 def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
@@ -99,6 +105,28 @@ def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
         lines.append(f"- **Deck & market:** {profile.dynamics.deck}")
     if profile.dynamics.notes:
         lines.append(f"- **Notes:** {profile.dynamics.notes}")
+    lines.append("")
+
+    lines.append("## Team Equipment")
+    lines.append("")
+    eq = profile.equipment
+    lines.append("### Available")
+    lines.append("")
+    for a in eq.available or ["(none listed)"]:
+        lines.append(f"- {a}")
+    lines.append("")
+    lines.append("### Accessible (within 2 hours)")
+    lines.append("")
+    for a in eq.accessible or ["(none listed)"]:
+        lines.append(f"- {a}")
+    lines.append("")
+    lines.append("### Critical Gaps")
+    lines.append("")
+    for g in eq.gaps or ["(none flagged)"]:
+        lines.append(f"- {g}")
+    if eq.notes:
+        lines.append("")
+        lines.append(eq.notes)
     lines.append("")
 
     lines.append("## Team Strengths")

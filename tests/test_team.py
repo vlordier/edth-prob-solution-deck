@@ -7,6 +7,7 @@ from pathlib import Path
 from agent.team import (
     MemberProfile,
     TeamDynamics,
+    TeamEquipment,
     TeamProfile,
     word_count,
     write_team_profile,
@@ -42,7 +43,7 @@ def test_write_team_profile_creates_file(tmp_path: Path) -> None:
             ),
             MemberProfile(
                 name="Bob",
-                intro="I'm a data scientist. I've shipped NLP models to production at a fintech startup. I can handle the ML pipeline — feature engineering, training, deployment on edge.",
+                intro="I'm a data scientist. I've shipped NLP models to production at a fintech startup. I can handle the ML pipeline.",
                 skills=["Python", "PyTorch", "ONNX"],
                 built=["NLP pipeline for fintech", "Edge deployment of RL model"],
                 experience_years="3 years data science",
@@ -53,6 +54,12 @@ def test_write_team_profile_creates_file(tmp_path: Path) -> None:
             demo_champion="Bob",
             builder="Alice (frontend) + Bob (ML)",
             deck="Alice",
+        ),
+        equipment=TeamEquipment(
+            available=["MacBook Pro M3 (Alice)", "ThinkPad P1 Gen 7 (Bob)", "Raspberry Pi 5 × 2"],
+            accessible=["Jetson Nano from hackathon sponsor table"],
+            gaps=["No SDR hardware — limits EW spectrum work", "No GPU beyond laptop"],
+            notes="Sponsor table has loaner Jetson Nanos.",
         ),
         total_members=2,
         strengths_summary=["Frontend + full-stack", "ML production experience"],
@@ -69,17 +76,34 @@ def test_write_team_profile_creates_file(tmp_path: Path) -> None:
     assert "No ML experience" in raw
     assert "Team Dynamics" in raw
     assert "Pitcher" in raw
+    assert "Team Equipment" in raw
+    assert "Raspberry Pi 5" in raw
+    assert "Jetson Nano" in raw
+    assert "Critical Gaps" in raw
+    assert "No SDR hardware" in raw
     assert "Team Strengths" in raw
     assert "Team Gaps" in raw
 
 
-def test_write_team_profile_minimal(tmp_path: Path) -> None:
+def test_write_team_profile_from_dicts(tmp_path: Path) -> None:
+    """Pydantic accepts dicts too — backward compat."""
     profile = TeamProfile(
-        members=[MemberProfile(name="Solo", intro="a" * 50, skills=[], built=[])],
-        dynamics=TeamDynamics(),
+        members=[
+            {"name": "Solo", "intro": "a" * 50, "skills": [], "built": []},
+        ],
         total_members=1,
-        strengths_summary=[],
-        gaps_summary=[],
     )
     path = write_team_profile(tmp_path, profile)
     assert path.exists()
+    raw = path.read_text(encoding="utf-8")
+    assert "Solo" in raw
+    assert "## Team Equipment" in raw  # always written, even if empty
+
+
+def test_write_team_profile_minimal() -> None:
+    profile = TeamProfile(
+        members=[MemberProfile(name="Solo", intro="a" * 50)],
+        total_members=1,
+    )
+    assert isinstance(profile.equipment, TeamEquipment)
+    assert profile.equipment.available == []

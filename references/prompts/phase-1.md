@@ -27,6 +27,24 @@ read it. For each cluster, adjust the execution score based on team skills:
     (all "C) Brand new") → dock innovation by 1 (novel to them ≠ novel).
   - Document any adjustments in the cluster notes.
 
+IMPORTANT — Equipment constraints: If `artefacts/team_profile.md` has a
+`## Team Equipment` section, read it. Equipment is a hard GO/NO-GO gate:
+  - If the cluster requires SDR/spectrum hardware and the team's equipment
+    gaps list "No SDR hardware" → dock execution by 3 points AND add a
+    warning flag: "⚠️ EQUIPMENT BLOCKER: No SDR hardware. This problem
+    cannot be meaningfully solved without spectrum access."
+  - If the cluster requires GPU/accelerator (ML training, video processing)
+    and the gap list flags no GPU access → dock execution by 2 and flag:
+    "⚠️ EQUIPMENT RISK: No GPU beyond laptops. Large model training or
+    video processing at scale may be infeasible."
+  - If the cluster requires physical robotics/hardware and the gap list
+    flags no hardware → dock execution by 3 and flag as EQUIPMENT BLOCKER.
+  - If the equipment section lists specific hardware that DIRECTLY enables
+    a cluster (e.g., "Raspberry Pi 5 × 2" for an edge-computing problem)
+    → boost execution by 1 and note: "✅ Equipment match: {hardware}."
+  - Equipment blockers are FIXED constraints — they cannot be overcome
+    with team skill. Flag them more aggressively than skill gaps.
+
 Output scores as a dict: {impact: X, innovation: Y, execution: Z, presentation: W}
 
 Step 3 — Market signal (mandatory, must include real data):
