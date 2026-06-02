@@ -144,6 +144,7 @@ def test_skill_md_has_required_sections() -> None:
         "## Validate command",
         "## Kill Chain Mapping",
         "## One-Sentence Clarity",
+        "## MCP tools",
     ]
     for section in required:
         assert section in content, f"SKILL.md missing section: {section}"

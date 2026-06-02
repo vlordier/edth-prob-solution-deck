@@ -47,10 +47,22 @@ In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models`
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
 cd edth-prob-solution-deck
 bash setup.sh   # auto-detects macOS/Linux/Windows — installs uv, syncs deps, pre-commit hooks
-opencode        # or: claude
 ```
 
-The agent is an Agent Skills-compatible skill — OpenCode and Claude Code both discover it automatically from `.opencode/skills/` and `.claude/skills/`. The first invocation auto-checks that `uv run python -c "import agent"` works.
+**OpenCode:** Done. The agent auto-discovers from `.opencode/skills/`. MCP tools (Exa + Context7) load from `opencode.json`.
+
+**Claude Code:** 
+```bash
+claude mcp add --transport http exa https://mcp.exa.ai/mcp
+claude mcp add --scope user --header "CONTEXT7_API_KEY: $CONTEXT7_API_KEY" --transport http context7 https://mcp.context7.com/mcp
+# Then: claude
+```
+
+Both auto-discover the skill from `.claude/skills/edth-agent/`. The first invocation auto-checks that `uv run python -c "import agent"` works.
+
+### 4. Optional: Context7 API key (higher rate limits)
+
+Free account at [context7.com](https://context7.com). Set `export CONTEXT7_API_KEY=...` before running Claude Code or OpenCode. Works without it at lower limits.
 
 ## Your own CSV
 

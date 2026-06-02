@@ -45,6 +45,23 @@ Verify: `uv run python -c "import agent; print('agent ready')"`
 
 For PDF output, optionally install Marp CLI: `npm install -g @marp-team/marp-cli || brew install marp-cli` (HTML fallback always works without it).
 
+## MCP tools (Exa + Context7)
+
+The agent ships with two MCP servers for deep research:
+
+- **Exa** — web search. `https://mcp.exa.ai/mcp`. Free, no API key. Use for Phase 1 market signals, Phase 5 web research, Phase 7 market/competition.
+- **Context7** — up-to-date library docs. `https://mcp.context7.com/mcp`. Set `CONTEXT7_API_KEY` for higher rate limits (free signup at context7.com). Use when the agent needs current API docs for any technology referenced in solutions.
+
+**Claude Code:** `.mcp.json` in project root auto-loads both on session start. No manual config needed.
+
+**OpenCode:** `opencode.json` in project root auto-loads both. OpenCode discovers it from the project directory.
+
+### When to use each MCP tool
+
+- **Web search (Exa):** Always preferred for Phase 1 (market signal), Phase 5 (prior art, competitors, TRL), Phase 7 (market sizing, competition). Exa returns clean content, not link lists. Use `web_search_exa` or `web_search_advanced_exa` for time-filtered results.
+- **Doc search (Context7):** When the solution references a specific library or framework (e.g. "React dashboard", "ONNX runtime", "signal processing with SciPy"), use `resolve_library_id` then `query_docs` to get current docs — not the LLM's training data.
+- **Fallback:** If neither MCP is connected, use the LLM's built-in web search tools. The standard tool names are sufficient.
+
 ## Behavior rules
 
 - **Timebox awareness:** After every Phase N (N ≥ 1), assess wall-clock time since `state["started_at"]`. If >6h have passed and current_phase < 3, print: `⏰ 6+ hours elapsed. Force-pick a problem now? (y)`. If >12h and current_phase < 5, print: `⏰ 12+ hours. You need 12h+ to build. Skip to ranking? (y)`. If >24h and current_phase < 7, print: `⏰ 24+ hours. Build time shrinking. Skip to deck? (y)`. Respect the answer.
