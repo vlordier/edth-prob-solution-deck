@@ -6,7 +6,7 @@
 
 I built this agent so teams would spend 30 minutes to an hour actually going through systematic steps instead of winging it.
 
-It reads a CSV of 40+ problem statements and walks you through the three things most teams skip:
+It reads problem statements from a CSV and walks you through the three things most teams skip:
 
 1. **Problem selection** — cluster, score, flag quality, check the market, panel review → top 3. No more "this one sounds cool."
 2. **Problem elicitation & validation** — Mom Test-style interview questions (adapted for soldiers and operators, not procurement officers), decompose into sub-problems, ROI-score the highest slice. No more solving the wrong thing.
@@ -120,7 +120,7 @@ artefacts/
 - Add your own judge: copy any file in `judges/`, fill in the YAML schema.
 
 ```bash
-uv sync && uv run pytest   # 104 tests
+uv sync && uv run pytest   # 106 tests
 ```
 
 ## Project
