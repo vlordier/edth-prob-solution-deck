@@ -8,15 +8,55 @@ Read a CSV of problem statements. Get a winning pitch deck — with 12 domain-ex
 open artefacts/07_deck.html
 ```
 
-## Install
+## Install from scratch
+
+### 1. Install OpenCode
 
 ```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+[Other install methods →](https://opencode.ai/docs/#install)
+
+### 2. Choose a free model
+
+OpenCode Zen gives you free access to coding-optimized models. Sign up at [opencode.ai/auth](https://opencode.ai/auth), add a payment method (required for signup, but free models cost nothing), and copy your API key.
+
+Free models available right now: **DeepSeek V4 Flash**, **MiMo-V2.5**, **Nemotron 3 Super**, and **Big Pickle** (stealth model).
+
+In the OpenCode terminal, run `/connect`, select **opencode**, and paste your key. Then pick a model with `/models`.
+
+[Zen docs →](https://opencode.ai/docs/zen)
+
+### 3. Install the agent
+
+```bash
+git clone https://github.com/vlordier/edth-prob-solution-deck.git
+cd edth-prob-solution-deck
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 npm install -g @marp-team/marp-cli   # optional, for PDF output
 ```
 
-Drop your CSV in `input/` (columns: `Name`, `Problem statement`). Default picks up `input/sample-problems.csv`.
+### 4. Try it
+
+```
+/edth-agent dry-run
+```
+
+30 seconds, zero interaction. Open `artefacts/07_deck.html` in your browser.
+
+## Your own CSV
+
+Drop a CSV with columns `Name` and `Problem statement` in `input/`. Real CSVs are gitignored.
+
+```bash
+python -c "
+from agent.context import default_context, save_context; from pathlib import Path
+ctx = default_context(); ctx['agent']['input_csv'] = 'input/your-file.csv'
+save_context(Path('artefacts'), ctx)
+"
+```
 
 ## Run
 
