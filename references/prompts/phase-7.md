@@ -16,8 +16,11 @@ Moat assessment: 2-3 defensible advantages (IP, data, network effects, regulator
 
 Step 3 — Business model (write 07_business_model.md):
 Revenue model, pricing strategy, go-to-market (specific phases with timelines),
-defensibility. Must include at least one specific acquisition pathway
-(OTA, SBIR/STTR, CSO, traditional FAR).
+defensibility. Must include at least one specific EUROPEAN acquisition pathway
+(EDIP — European Defence Industry Programme, EDF — European Defence Fund,
+SAFE loans, OCCAR, national MoD direct procurement). For dual-use solutions,
+also cover civilian market entry. Do NOT reference US procurement (FAR, SBIR/STTR,
+OTA) unless the solution is explicitly dual-use for the US market.
 
 Step 4 — Generate deck slides:
 For each slide, write Marp-flavored markdown (front-matter at top, `---` as

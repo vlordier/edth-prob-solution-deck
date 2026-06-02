@@ -309,6 +309,16 @@ Read `references/prompts/phase-8.md`, then:
 8. Validate. Print: `⏱  Total: {elapsed:.0f} min across 9 phases.`
 9. Audit. Mark run complete.
 
+#### Monday Morning Post-Hackathon Pass
+
+Runs after Phase 8. Read `references/prompts/monday-morning.md`, then:
+
+1. `⚙️  Monday Morning — preparing post-hackathon roadmap...`
+2. Execute prompt: EU funding, key contacts, 30/60/90 plan, external pitch.
+3. Write `artefacts/monday_morning.md`.
+4. `✅ Monday Morning roadmap saved. Bridge from demo day to deployment.`
+5. Write audit entry.
+
 ---
 
 ## Special Commands

@@ -52,6 +52,26 @@ Pick from:
 
 Record all 5 answers immediately after they respond.
 
+STEP 2.5 — Defense newcomer check (after Step 2):
+If the person answered "C) This is brand new to me" on domain depth:
+  "This is your first defense project. That's completely fine — EDTH exists
+  to bring new talent into defense. Quick 90-second primer:
+
+  KILL CHAIN: Find → Fix → Track → Target → Engage → Assess.
+  Every defense system sits somewhere in this chain. Know where yours sits.
+
+  TRL (Technology Readiness Level): 1 = idea, 5 = lab demo, 7 = fielded
+  prototype, 9 = deployed. Most hackathons produce TRL 4-6.
+
+  PROCUREMENT: Europe uses EDIP, EDF, SAFE loans, OCCAR, national MoD
+  contracts — not US FAR/SBIR. Companies like Helsing and Quantum Systems
+  have navigated these paths.
+
+  INTEROPERABILITY: NATO STANAGs matter. So does what's deployed in Ukraine
+  right now — Delta, Kropyva, Starlink, DJI, SDR radios.
+
+  Do you want me to explain any of these in more detail?"
+
 STEP 3 — Blind spot check:
 Based on their intro + quick-fire answers, identify 1-3 blind spots.
 Phrase them as observations, not insults. Examples:

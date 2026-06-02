@@ -142,6 +142,7 @@ def test_skill_md_has_required_sections() -> None:
         "### Phase 6 — Demo",
         "### Phase 7 — Deck",
         "### Phase 8 — Final",
+        "#### Monday Morning Post-Hackathon",
         "## Special Commands",
         "## Team Discovery",
         "## Question Sheet",
@@ -177,6 +178,7 @@ def test_all_reference_files_exist() -> None:
         "prompts/clarity.md",
         "prompts/review.md",
         "prompts/setup.md",
+        "prompts/monday-morning.md",
         "judges.md",
     ]
     for path in expected:
