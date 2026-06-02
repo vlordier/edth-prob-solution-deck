@@ -109,9 +109,14 @@ Just type `/edth-agent`. The agent auto-checks your environment, resumes from wh
 | `/edth-agent reset` | Wipe `artefacts/` and start over |
 | `/edth-agent panel` | Show current panel + biases |
 | `/edth-agent panel generate` | Auto-pick 5 judges for the chosen problem |
-| `/edth-agent panel add <short>` | Add a judge |
-| `/edth-agent panel remove <short>` | Remove a judge |
+| `/edth-agent panel add <short>` | Add a judge to the active panel |
+| `/edth-agent panel remove <short>` | Remove a judge from the active panel |
 | `/edth-agent panel <short>` | Free-form chat with one judge in character |
+| `/edth-agent judge list` | List all 12+ judges — name, tags, custom flag |
+| `/edth-agent judge add` | Create a new custom judge persona (interactive) |
+| `/edth-agent judge edit <short>` | Edit a judge's YAML — backed up before writing |
+| `/edth-agent judge remove <short>` | Soft-delete a judge — moved to judges/backups/ |
+| `/edth-agent judge reset <short>` | Restore a judge from its original shipped YAML |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet for owner interviews |
 | `/edth-agent render` | Re-render the deck from current artefacts |
 | `/edth-agent review` | Submit a draft PDF/deck to the 12-judge panel for live Q&A — each judge asks domain-relevant questions [runs as subagents] |
@@ -157,6 +162,90 @@ The agent maintains a panel of 5 judge personas that review every artefact. Libr
 | 6 Demo | Each judge previews script; gives 1-3 hard questions for live demo |
 | 7 Deck | Each judge previews deck; flags the slide they'd push back on hardest |
 | 8 Final | Each judge gives 👍/👎 + "what would change my mind" |
+
+---
+
+## Judge Management
+
+Custom judges persist as YAML files in `judges/` and are auto-discovered
+by `load_judge_library()`. All mutations are backed up to `judges/backups/`.
+
+### Add a Judge (`/edth-agent judge add`)
+
+Execute this prompt verbatim:
+
+```
+You are helping a user create a new custom judge persona. The judge
+will be saved as `judges/<short>.yaml` and auto-discovered in all
+future sessions.
+
+Ask questions one at a time until ALL required fields in the judge
+schema (`agent.judge_schema.REQUIRED_FIELDS`) are filled:
+
+1. SHORT: "Short identifier? Lowercase, hyphens OK. Becomes
+   judges/<short>.yaml. Example: drone-operator."
+
+2. FULL NAME: "Full display name? Example: Maj. Elena Vasquez"
+
+3. TAGS: "Domain expertise? Pick from standard tags + custom.
+   Standard: autonomy, c-uas, c2, decision_support, ew, signal_proc,
+   swarm, uuv, usv, radar, hardware, software, ui_ux, detection,
+   communication, navigation, multi_domain, countermeasure.
+   Include 'all' if cross-domain. Example: ['c-uas','swarm','autonomy']"
+
+4. BACKGROUND: "One paragraph: who are they? Units served in?
+   Conflicts? Systems built or operated? What makes them qualified?"
+
+5. PRIORITIES (3-6): "What do they prioritize? Example:
+   ['operational relevance', 'survivability', 'simplicity']"
+
+6. ANTI-PRIORITIES (3-6): "What do they hate? Pet peeves, buzzwords.
+   Example: ['vendor lock-in', 'AI for AI's sake']"
+
+7. DECISION STYLE: "One sentence. Example: 'decisive; 30-second
+   answer or admit you don't know'"
+
+8. LANGUAGE PATTERNS (3-6): "Phrases they actually say. Capture their
+   voice. Example: ['on the flight line', 'what kills this']"
+
+9. SCORING BIASES: "How much do they over/under-weight each rubric
+   axis? Dict with all 4 axes. Example:
+   {impact: 0.10, innovation: -0.05, execution: 0.10, presentation: 0.00}.
+   Biases add to defaults (0.30/0.25/0.25/0.20)."
+
+10. KNOWLEDGE GAPS (2-4): "What do they NOT know? Example: ['consumer
+    tech', 'business modeling']"
+
+11. HARD QUESTIONS (3-6): "Questions they always ask. Get adapted per
+    phase. Example: ['What's the kill chain?', 'What's the 3am
+    maintenance story?']"
+
+Validate via `agent.judge_schema.validate_judge(data)`.
+Call `agent.judges.add_judge(judges_dir, data)`.
+Print: "✅ Judge {short} added. Available for auto-selection."
+```
+
+### Edit a Judge (`/edth-agent judge edit <short>`)
+
+Load `judges/{short}.yaml`. Present current profile. Ask what to change.
+Do NOT let them change the `short` field. Call
+`agent.judges.update_judge(judges_dir, short, data)`.
+Backup auto-created at `judges/backups/{short}.yaml.bak.<timestamp>`.
+
+### Remove a Judge (`/edth-agent judge remove <short>`)
+
+Call `agent.judges.remove_judge(judges_dir, short)`. File moved to
+`judges/backups/{short}.yaml.removed.<timestamp>` — safe-delete.
+
+### Reset a Judge (`/edth-agent judge reset <short>`)
+
+Restore the original shipped version: `git checkout HEAD -- judges/{short}.yaml`.
+If the file was never in git (custom judge), error.
+
+### List Judges (`/edth-agent judge list`)
+
+Call `agent.judges.list_judges_full(judges_dir)`. Print table:
+short, name, tags, custom flag, background excerpt.
 
 ---
 
