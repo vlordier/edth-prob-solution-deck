@@ -337,6 +337,8 @@ Quality rules:
 8. Re-score candidates. Write via `agent.candidates.write_candidate_problem()`.
 9. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
 10. **Second team check:** After Phase 2 (problem chosen), cross-reference `artefacts/team_profile.md` against the chosen problem. Print: `🔍  Capability check: this problem requires [skills]. Your team has [gaps].` Specifically: check hardware requirement vs team hardware answers, ML requirement vs ML maturity, domain depth vs team domain knowledge. If major gaps exist, print: `⚠️  Warning: your team may not have the skills for this problem. Consider picking a different candidate. Continue? (y)`
+
+    Also, produce an **adjacent problem suggestion**. Look at `artefacts/01_triage.md` for clusters that scored high on execution but lower on impact — problems your team *could* easily build but chose not to. Print: `💡  Adjacent consideration: in the [{cluster}] cluster, [{problem_id}] scored [execution_scores] on execution and [impact_score] on impact. Given your team's strengths in [team_strengths], this problem may be a better fit. Would you like to reconsider? (y/n)` If they say yes, re-run Phase 2 with that problem as the top candidate.
 11. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
 12. Print: `✅ Phase 2 — Elicit: problem {pid} chosen, panel of {N} judges locked.`
 13. `agent.mark_phase_completed(state, 2, artefacts_dir / "02_candidate_problem.md")`. Save state.
@@ -413,25 +415,58 @@ Runs after Phase 3 (sub-problem chosen). Not a separate phase — a mandatory
 Execute this prompt verbatim:
 
 ```
-You are mapping the chosen sub-problem to the military kill chain.
+You are mapping the chosen sub-problem to the military kill chain
+and broader European defense tech considerations.
+
 Read `artefacts/03_chosen_sub_problem.md` for the chosen sub-problem
 and `artefacts/02_candidate_problem.md` for the larger problem context.
 
-The kill chain has 6 links:
-  Find → Fix → Track → Target → Engage → Assess
-  (detect) (identify) (follow) (decide) (act) (evaluate)
+Answer these questions in 1-2 sentences each:
 
-Answer these 3 questions in 1-2 sentences each:
+1. KILL CHAIN: Which link(s) does this solution sit in — Find / Fix / Track /
+   Target / Engage / Assess? What happens in the link BEFORE yours? If that
+   link fails, does your solution still matter?
 
-1. Which link(s) does this solution sit in? Be precise.
-2. What happens in the link BEFORE yours? If that link fails, does your
-   solution still matter? (If yes, why? If no, what's the dependency?)
-3. What happens in the link AFTER yours? Who consumes your output, and
-   how fast do they need it?
+2. ATTRITION / SUSTAIN: Ukraine burns through equipment at shocking rates.
+   Can this be produced at scale? At what unit cost? How long does one unit
+   last in the field before it's destroyed, jammed, or worn out?
 
-Append this as a new section `## Kill Chain` to the bottom of
-`artefacts/03_chosen_sub_problem.md`. Do NOT overwrite the file —
-append to it.
+3. INTEROPERABILITY: European armies use different radios, different
+   standards, different languages. Does this integrate with NATO STANAGs?
+   With what's currently deployed in Ukraine (SDR, Starlink, DJI, etc.)?
+   Or does it require its own ecosystem?
+
+4. LOGISTICS: How does this get to the front? Does it need Starlink? A
+   generator? A vehicle trailer? Can a territorial defense volunteer carry
+   it? What's the power source — batteries, diesel, solar?
+
+5. FABRICATION / SUPPLY CHAIN: Can European industry produce this? Are we
+   dependent on Chinese semiconductors, American ITAR-controlled components,
+   or single-source suppliers? What's the lead time from order to delivery?
+
+6. TRAINING BURDEN: Can a conscript or a territorial defense volunteer
+   operate this with 4 hours of training? Or does it need a specialist
+   with 6 months of school?
+
+7. COUNTER-COUNTERMEASURE: The adversary adapts in weeks, not years. Is
+   this software-upgradable in the field? Can frequency bands, models,
+   or tactics be updated without returning to depot?
+
+8. DUAL-USE / IHL: What's the civilian risk? Does this comply with the
+   principles of distinction and proportionality? Is there a human in the
+   loop? Could this be repurposed for civilian harm?
+
+9. COST PER EFFECT: What's the cost-exchange ratio? If the adversary's
+   threat costs $500 and your countermeasure costs $50,000, the adversary
+   wins by attrition. If yours costs $500, you win.
+
+10. SOVEREIGNTY: Is this European-made or dependent on a non-EU supplier?
+    Can it be exported without ITAR? If the US changes policy tomorrow,
+    does your supply chain survive?
+
+Append this as a new section `## Kill Chain & European Defense Context`
+to the bottom of `artefacts/03_chosen_sub_problem.md`.
+Do NOT overwrite the file — append to it.
 ```
 
 ### Implementation steps
