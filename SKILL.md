@@ -65,6 +65,7 @@ If neither is available, the HTML fallback works fine — mention this and conti
 | `/edth-agent panel add <short>` | Add a judge |
 | `/edth-agent panel remove <short>` | Remove a judge |
 | `/edth-agent panel <short>` | Free-form chat with one judge in character |
+| `/edth-agent sheet` | Generate a printable Mom Test question sheet for owner interviews |
 | `/edth-agent render` | Re-render the deck from current artefacts |
 
 ## Phases (0–8)
@@ -277,6 +278,66 @@ Quality rules:
 6. User picks 1. Record via `agent.state.set_decision(state, "chosen_problem_id", ...)`.
 7. Auto-pick panel: `agent.judges.select_panel()`. Store in state. Offer user to review.
 8. Write audit. Mark phase complete.
+
+---
+
+## Question Sheet (`/edth-agent sheet`)
+
+Generates a printable Mom Test interview guide — a reference document to
+take into problem-owner conversations. Separate from the interactive Q&A
+flow. Can be called at any time after Phase 1 completes.
+
+### Question Sheet Prompt Template
+
+Execute this prompt verbatim:
+
+```
+You are generating a printable Mom Test question sheet for interviewing
+a problem owner. Read `artefacts/01_triage.md` to get the top 3 clusters.
+
+Step 1 — Mom Test rules (5-6 rules, verbatim):
+  1. Talk about their life, not your idea.
+  2. Ask about specific past incidents — "the last time this happened..."
+  3. Never ask "would you use X?" or "how much would you pay?"
+  4. Look for concrete cost: hours, people, dollars burned.
+  5. Compliments are traps — "sounds great" means "I'm being polite."
+  6. If they can't introduce you to someone who feels it more, the problem
+     may not exist.
+
+Step 2 — Interviewer tips (4-5 tips):
+  - Start every question with "Tell me about the last time..."
+  - If they say "a lot of people have this problem", ask for an introduction
+    right there. Pull out your phone.
+  - Bad answer: "We'd definitely use that." Good answer: "Last week we lost
+    3 hours because we didn't have this. Here's the email thread."
+  - Record the call. Note specific names, dates, and numbers.
+  - End with: "Is there anything I should have asked?"
+
+Step 3 — Per cluster: 3 DO-ask questions + 2 DON'T-ask questions
+  For each of the top 3 clusters, generate:
+  - 3 good questions (past-tense, incident-based, cost-probing)
+  - 2 bad questions (leading, hypothetical, opinion-seeking) with WHY they're bad
+  Build these as `agent.sheet.GoodQuestion` and `agent.sheet.BadQuestion`.
+
+Step 4 — Answer scoring rubric (4 rows):
+  | Concrete past incident with cost | Strong signal — validated problem |
+  | Vague complaint, no specifics | Weak signal — not validated |
+  | "Sounds great" / "very interesting" | Anti-signal — being polite |
+  | "Let me introduce you to X" | Strong signal — they care enough to connect |
+
+Build a `agent.sheet.QuestionSheet` and write via
+`agent.sheet.write_question_sheet(artefacts_dir, sheet)`.
+Output goes to `artefacts/question_sheet.md`.
+```
+
+### Implementation steps
+
+1. Verify Phase 1 is completed (`artefacts/01_triage.md` exists).
+2. Execute the prompt template above.
+3. Write via `agent.sheet.write_question_sheet()`.
+4. Tell the user: "Question sheet saved to `artefacts/question_sheet.md`.
+   Print it or share it before your next owner interview."
+5. Write audit entry.
 
 ---
 

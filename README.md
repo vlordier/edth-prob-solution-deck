@@ -65,6 +65,7 @@ All commands in OpenCode chat:
 | `/edth-agent dry-run` | 30s smoke test — full pipeline, zero interaction |
 | `/edth-agent run` | Start or resume the workflow |
 | `/edth-agent validate` | Check all artefacts for issues |
+| `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |
 | `/edth-agent skip-to 5` | Jump to ranking with stub phases |
 
