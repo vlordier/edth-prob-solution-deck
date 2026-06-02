@@ -1,6 +1,20 @@
 # EDTH Hackathon Agent
 
-Read a CSV of problem statements. Get a winning pitch deck — with 12 domain-expert judges reviewing every step.
+> *"What's your problem?"*
+>
+> I'd go from table to table around noon on Saturday and ask. Few teams could answer. Fewer had validated it with a problem owner. Almost nobody knew how to ask good questions. Of the ones who had a problem well-defined, maybe half had ideated properly. Of those, almost none had stress-tested their ideas against anyone who'd push back before they started building.
+
+I built this agent so teams would spend 30 minutes to an hour actually going through systematic steps instead of winging it.
+
+It reads a CSV of 40+ problem statements and walks you through the three things most teams skip:
+
+1. **Problem selection** — cluster, score, flag quality, check the market, panel review → top 3. No more "this one sounds cool."
+2. **Problem elicitation & validation** — Mom Test-style interview questions (adapted for soldiers and operators, not procurement officers), decompose into sub-problems, ROI-score the highest slice. No more solving the wrong thing.
+3. **Solution ideation** — 20+ divergent ideas across 7 techniques, deduped, rated 1-5 by a panel of 12 domain-expert judges, web-researched, ranked, and validated. No more "we brainstormed 3 ideas and picked the first one."
+
+**Output:** a ranked solution + demo plan + full Marp pitch deck with market, competition, and business model.
+
+---
 
 ```
 /edth-agent dry-run
@@ -28,7 +42,7 @@ In OpenCode, run `/connect`, select **opencode**, paste your key. Then `/models`
 
 [Zen docs →](https://opencode.ai/docs/zen)
 
-   3. clone and go
+### 3. Clone and go
 
 ```bash
 git clone https://github.com/vlordier/edth-prob-solution-deck.git
@@ -64,21 +78,21 @@ All commands in OpenCode chat:
 |---|---|
 | `/edth-agent dry-run` | 30s smoke test — full pipeline, zero interaction |
 | `/edth-agent run` | Start or resume the workflow |
-| `/edth-agent validate` | Check all artefacts for issues |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |
+| `/edth-agent validate` | Check all artefacts for issues |
 | `/edth-agent skip-to 5` | Jump to ranking with stub phases |
 
-After each phase the agent asks "Approve? (y/edit/redo)".
+After each phase: "Approve? (y/edit/redo)".
 
 ## Output
 
 ```
 artefacts/
-├── 07_deck.html      ← Open in browser (arrow keys to navigate)
+├── 07_deck.html      ← Open in browser
 ├── 07_deck.pdf       ← If Marp CLI installed
-├── 07_market.md      ← TAM/SAM/SOM, trends, personas
-├── 07_competition.md ← 3+ rivals, strengths, weaknesses, moat
+├── 07_market.md      ← TAM/SAM/SOM
+├── 07_competition.md ← Rivals, strengths, moat
 └── 07_business_model.md
 ```
 
@@ -111,8 +125,6 @@ uv sync && uv run pytest   # 104 tests
 
 ## Project
 
-## Project
-
 | What | Where |
 |---|---|
 | Agent driver | `SKILL.md` — prompt templates, commands, workflow |
@@ -120,4 +132,8 @@ uv sync && uv run pytest   # 104 tests
 | Judges | `judges/` — 12 YAMLs |
 | Templates | `templates/` — Marp slide skeletons |
 | Sample run | `examples/sample-run/` — pre-generated artefacts + deck |
-| Tests | `tests/` — 104 tests |
+| Tests | `tests/` — 106 tests |
+
+---
+
+Fork it. Hack it. Profit.
