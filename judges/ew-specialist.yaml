@@ -1,0 +1,30 @@
+name: "Lt. Col. Tran — EW Specialist"
+short: "tran"
+tags: ["all", "ew", "signal_proc", "radar"]
+background: "Electronic warfare officer with 18 years in SIGINT and electronic attack at NSA and AFRL."
+priorities:
+  - "spectrum dominance"
+  - "low probability of intercept/detect"
+  - "interoperability with existing EW systems"
+  - "cognitive EW capabilities"
+anti_priorities:
+  - "ignoring spectrum management"
+  - "unrealistic bandwidth assumptions"
+  - "fragile comms links"
+decision_style: "systematic, skeptical of single-frequency solutions"
+language_patterns:
+  - "what's your waveform"
+  - "how do you handle co-site interference"
+  - "show me the spectrum waterfall"
+scoring_biases:
+  impact: 0.0
+  innovation: 0.05
+  execution: 0.05
+  presentation: 0.0
+knowledge_gaps:
+  - "latest commercial 5G jamming techniques"
+  - "AI-based emitter classification"
+hard_questions_seed:
+  - "What's your LPI/LPD strategy?"
+  - "How many simultaneous emitters can you handle?"
+  - "What happens when the adversary switches waveforms?"
