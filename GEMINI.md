@@ -33,4 +33,4 @@ Then type `/edth-agent`.
 - **Python glue**: `agent/` — parse, normalize, score, render, validate, doctor
 - **Judge YAMLs**: `judges/` — 12 shipped + custom (backed up to `judges/backups/`)
 - **MCP config**: `.mcp.json` + `opencode.json` — Exa + Context7 auto-loaded
-- **Tests**: `tests/` — 203 tests, 0 ruff errors
+- **Tests**: `tests/` — 241 tests, 0 ruff errors

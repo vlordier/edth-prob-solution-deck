@@ -121,12 +121,11 @@ artefacts/
 
 ## Tune it
 
-- Edit `hackathons/edth.yaml` to change hackathon, rubric weights, or team profile.
 - Drop real CSVs in `input/` (gitignored). Update path in `artefacts/00_context.yaml`.
 - Add your own judge: copy any file in `judges/`, fill in the YAML schema.
 
 ```bash
-uv sync --all-groups && uv run pytest   # 116 tests
+uv run pytest   # 241 tests (0 ruffs expected)
 uv run ruff check agent/ tests/         # Python lint (0 errors)
 ```
 
@@ -139,8 +138,8 @@ uv run ruff check agent/ tests/         # Python lint (0 errors)
 | Judges | `judges/` — 12 YAMLs |
 | Templates | `templates/` — Marp slide skeletons |
 | Setup | `setup.sh` — cross-platform auto-install (macOS/Linux/Windows) |
-| Linting | `.pre-commit-config.yaml` — ruff + markdownlint on commit |
-| Tests | `tests/` — 116 tests |
+| Linting | `.pre-commit-config.yaml` — ruff (format + lint) on commit |
+| Tests | `tests/` — 241 tests |
 
 ---
 
