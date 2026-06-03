@@ -16,10 +16,17 @@ ROI_WEIGHTS = {"impact": 0.30, "time_fit": 0.30, "demo_ability": 0.25, "dependen
 
 @dataclass
 class SubProblem:
+    """A decomposed sub-problem with ROI axis scores."""
+
     id: str
     title: str
     scores: dict[str, float]
     description: str = ""
+
+    def __post_init__(self) -> None:
+        missing = set(ROI_WEIGHTS) - self.scores.keys()
+        if missing:
+            log.warning("SubProblem '%s' missing ROI axes: %s", self.id, sorted(missing))
 
     def roi_score(self) -> float:
         """Weighted ROI score clamped to [1.0, 5.0].
@@ -34,6 +41,7 @@ class SubProblem:
 
 
 def write_sub_problem(artefacts_dir: Path, sub_problems: list[SubProblem]) -> Path:
+    """Write `03_chosen_sub_problem.md` — Phase 3 sub-problem decomposition."""
     lines = ["# Sub-problem decomposition", ""]
     for sp in sub_problems:
         lines.append(f"## {sp.id}: {sp.title}")

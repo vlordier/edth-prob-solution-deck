@@ -1,4 +1,8 @@
-"""Team discovery helpers — word counting and profile writing."""
+"""Team discovery helpers — word counting and profile writing.
+
+Produces artefacts/team_profile.md from structured team discovery interviews.
+Uses pydantic v2 models for schema enforcement.
+"""
 
 from __future__ import annotations
 
@@ -14,10 +18,13 @@ log = logging.getLogger(__name__)
 
 
 def word_count(text: str) -> int:
+    """Count whitespace-delimited words in a string."""
     return len(text.strip().split())
 
 
 class MemberProfile(BaseModel):
+    """A team member's profile from the discovery interview."""
+
     name: str
     intro: str
     skills: list[str] = Field(default_factory=list)
@@ -29,6 +36,8 @@ class MemberProfile(BaseModel):
 
 
 class TeamDynamics(BaseModel):
+    """Role assignments for the 48h sprint."""
+
     pitcher: str = ""
     demo_champion: str = ""
     builder: str = ""
@@ -37,6 +46,8 @@ class TeamDynamics(BaseModel):
 
 
 class TeamEquipment(BaseModel):
+    """Hardware/software inventory — what the team has, can get, or critically needs."""
+
     available: list[str] = Field(default_factory=list)
     accessible: list[str] = Field(default_factory=list)
     gaps: list[str] = Field(default_factory=list)
@@ -44,6 +55,8 @@ class TeamEquipment(BaseModel):
 
 
 class TeamProfile(BaseModel):
+    """Complete team profile — members, dynamics, equipment, and gap analysis."""
+
     members: list[MemberProfile]
     dynamics: TeamDynamics = Field(default_factory=TeamDynamics)
     equipment: TeamEquipment = Field(default_factory=TeamEquipment)
@@ -53,6 +66,7 @@ class TeamProfile(BaseModel):
 
 
 def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
+    """Write `team_profile.md` — committed team memory for the hackathon."""
     lines = [
         "# Team Profile",
         "",
@@ -62,53 +76,79 @@ def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
         "",
     ]
     for i, m in enumerate(profile.members, start=1):
-        lines.append(f"## Member {i}: {m.name}")
-        lines.append("")
-        lines.append("### Self-introduction")
-        lines.append("")
-        lines.append(m.intro)
-        lines.append("")
-        if m.skills:
-            lines.append(f"**Declared skills:** {', '.join(m.skills)}")
-            lines.append("")
-        if m.built:
-            lines.append("**Things they've built:**")
-            for b in m.built:
-                lines.append(f"- {b}")
-            lines.append("")
-        if m.experience_years:
-            lines.append(f"**Experience:** {m.experience_years}")
-            lines.append("")
-        if m.self_assessment:
-            lines.append(f"**Self-assessment:** {m.self_assessment}")
-            lines.append("")
-        if m.blind_spots:
-            lines.append("**Detected gaps / blind spots:**")
-            for bs in m.blind_spots:
-                lines.append(f"- {bs}")
-            lines.append("")
-        if m.quick_answers:
-            lines.append("**Quick-fire answers:**")
-            for q, a in m.quick_answers.items():
-                lines.append(f"- **{q}** → {a}")
-            lines.append("")
-        lines.append("---")
-        lines.append("")
+        _render_member(m, i, lines)
 
+    _render_dynamics(profile, lines)
+    _render_equipment(profile, lines)
+
+    lines.append("## Team Strengths")
+    lines.append("")
+    for s in profile.strengths_summary:
+        lines.append(f"- {s}")
+    lines.append("")
+
+    lines.append("## Team Gaps")
+    lines.append("")
+    for g in profile.gaps_summary:
+        lines.append(f"- {g}")
+    lines.append("")
+
+    return write_artefact(artefacts_dir, ARTEFACTS.TEAM_PROFILE, lines)
+
+
+def _render_member(m: MemberProfile, idx: int, lines: list[str]) -> None:
+    lines.append(f"## Member {idx}: {m.name}")
+    lines.append("")
+    lines.append("### Self-introduction")
+    lines.append("")
+    lines.append(m.intro)
+    lines.append("")
+    if m.skills:
+        lines.append(f"**Declared skills:** {', '.join(m.skills)}")
+        lines.append("")
+    if m.built:
+        lines.append("**Things they've built:**")
+        for b in m.built:
+            lines.append(f"- {b}")
+        lines.append("")
+    if m.experience_years:
+        lines.append(f"**Experience:** {m.experience_years}")
+        lines.append("")
+    if m.self_assessment:
+        lines.append(f"**Self-assessment:** {m.self_assessment}")
+        lines.append("")
+    if m.blind_spots:
+        lines.append("**Detected gaps / blind spots:**")
+        for bs in m.blind_spots:
+            lines.append(f"- {bs}")
+        lines.append("")
+    if m.quick_answers:
+        lines.append("**Quick-fire answers:**")
+        for q, a in m.quick_answers.items():
+            lines.append(f"- **{q}** → {a}")
+        lines.append("")
+    lines.append("---")
+    lines.append("")
+
+
+def _render_dynamics(profile: TeamProfile, lines: list[str]) -> None:
     lines.append("## Team Dynamics")
     lines.append("")
-    if profile.dynamics.pitcher:
-        lines.append(f"- **Pitcher (3-min pitch):** {profile.dynamics.pitcher}")
-    if profile.dynamics.demo_champion:
-        lines.append(f"- **Demo champion (live demo):** {profile.dynamics.demo_champion}")
-    if profile.dynamics.builder:
-        lines.append(f"- **Builder (core code):** {profile.dynamics.builder}")
-    if profile.dynamics.deck:
-        lines.append(f"- **Deck & market:** {profile.dynamics.deck}")
-    if profile.dynamics.notes:
-        lines.append(f"- **Notes:** {profile.dynamics.notes}")
+    d = profile.dynamics
+    if d.pitcher:
+        lines.append(f"- **Pitcher (3-min pitch):** {d.pitcher}")
+    if d.demo_champion:
+        lines.append(f"- **Demo champion (live demo):** {d.demo_champion}")
+    if d.builder:
+        lines.append(f"- **Builder (core code):** {d.builder}")
+    if d.deck:
+        lines.append(f"- **Deck & market:** {d.deck}")
+    if d.notes:
+        lines.append(f"- **Notes:** {d.notes}")
     lines.append("")
 
+
+def _render_equipment(profile: TeamProfile, lines: list[str]) -> None:
     lines.append("## Team Equipment")
     lines.append("")
     eq = profile.equipment
@@ -130,17 +170,3 @@ def write_team_profile(artefacts_dir: Path, profile: TeamProfile) -> Path:
         lines.append("")
         lines.append(eq.notes)
     lines.append("")
-
-    lines.append("## Team Strengths")
-    lines.append("")
-    for s in profile.strengths_summary:
-        lines.append(f"- {s}")
-    lines.append("")
-
-    lines.append("## Team Gaps")
-    lines.append("")
-    for g in profile.gaps_summary:
-        lines.append(f"- {g}")
-    lines.append("")
-
-    return write_artefact(artefacts_dir, ARTEFACTS.TEAM_PROFILE, lines)

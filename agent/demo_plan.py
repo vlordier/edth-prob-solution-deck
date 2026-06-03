@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Risk:
+    """A single risk entry in the demo plan register."""
+
     what: str
     likelihood: str
     impact: str
@@ -22,6 +24,8 @@ class Risk:
 
 @dataclass
 class DemoPlan:
+    """The Phase 6 output — 3-minute demo script, Q&A prep, and risk register."""
+
     thin_demo: str
     script: list[tuple[int, str]]
     pitch: str
@@ -35,6 +39,7 @@ def _fmt_seconds(s: int) -> str:
 
 
 def write_demo_plan(artefacts_dir: Path, plan: DemoPlan) -> Path:
+    """Write `06_demo_plan.md` — Phase 6 demo script, Q&A, and risk register."""
     lines = [
         "# Demo Plan",
         "",

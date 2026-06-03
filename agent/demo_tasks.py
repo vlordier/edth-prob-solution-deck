@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class DemoTask:
+    """A single build task assigned to a team member."""
+
     id: str
     title: str
     description: str
@@ -31,6 +33,8 @@ class DemoTask:
 
 @dataclass
 class DemoTaskPlan:
+    """Task breakdown with team assignments, gaps, and build order."""
+
     tasks: list[DemoTask]
     total_estimated_hours: str
     critical_gaps: list[str]
@@ -39,6 +43,7 @@ class DemoTaskPlan:
 
 
 def write_demo_tasks(artefacts_dir: Path, plan: DemoTaskPlan) -> Path:
+    """Write `demo_tasks.md` — Phase 6 task breakdown with team assignments."""
     lines = [
         "# Demo Task Breakdown & Team Assignment",
         "",

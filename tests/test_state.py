@@ -148,3 +148,20 @@ def test_expected_phases_remaining() -> None:
     state["phases"]["0"]["status"] = "completed"
     state["phases"]["1"]["status"] = "completed"
     assert expected_phases_remaining(state) == 7
+
+
+def test_elapsed_minutes_returns_none_when_not_started() -> None:
+    from agent.state import elapsed_minutes
+
+    state = empty_state()
+    assert elapsed_minutes(state) is None
+
+
+def test_elapsed_minutes_returns_positive_when_started() -> None:
+    from agent.state import elapsed_minutes
+
+    state = empty_state()
+    state["started_at"] = "2026-01-01T00:00:00+00:00"
+    result = elapsed_minutes(state)
+    assert result is not None
+    assert result > 0

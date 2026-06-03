@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 def write_market(
     artefacts_dir: Path, tam: str, sam: str, som: str, trends: str, personas: list[str]
 ) -> Path:
+    """Write `07_market.md` — market size, growth trends, and buyer personas."""
     lines = [
         "# Market Research",
         "",
@@ -39,6 +40,7 @@ def write_market(
 def write_competition(
     artefacts_dir: Path, competitors: list[tuple[str, str, str, str]], moat: list[str]
 ) -> Path:
+    """Write `07_competition.md` — competitor table and defensive moat analysis."""
     lines = [
         "# Competition Analysis",
         "",
@@ -65,6 +67,7 @@ def write_competition(
 def write_business_model(
     artefacts_dir: Path, revenue: str, pricing: str, gtm: str, defensibility: str
 ) -> Path:
+    """Write `07_business_model.md` — revenue, pricing, GTM, and defensibility."""
     lines = [
         "# Business Model",
         "",

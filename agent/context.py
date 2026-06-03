@@ -1,4 +1,8 @@
-"""Phase 0 — Onboarding context I/O."""
+"""Phase 0 — Onboarding context I/O.
+
+Loads and merges hackathon context from artefacts/00_context.yaml
+with built-in defaults. Saves updated context back.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +19,8 @@ log = logging.getLogger(__name__)
 
 
 class AgentContext(TypedDict, total=False):
+    """Onboarding context — hackathon metadata, team profile, constraints, agent config."""
+
     hackathon: dict[str, Any]
     team: dict[str, Any]
     constraints: dict[str, Any]
@@ -22,6 +28,7 @@ class AgentContext(TypedDict, total=False):
 
 
 def default_context() -> AgentContext:
+    """Return a context dict with sensible EDTH defaults."""
     return AgentContext(
         hackathon={
             "name": "EDTH Munich 2025",
@@ -48,6 +55,7 @@ def default_context() -> AgentContext:
 
 
 def load_context(artefacts_dir: Path) -> AgentContext:
+    """Load 00_context.yaml, falling back to defaults if missing or malformed."""
     path = artefacts_dir / ARTEFACTS.CONTEXT
     if not path.exists():
         return default_context()
@@ -68,6 +76,7 @@ def load_context(artefacts_dir: Path) -> AgentContext:
 
 
 def save_context(artefacts_dir: Path, context: AgentContext) -> Path:
+    """Persist context to 00_context.yaml. Creates artefacts dir if needed."""
     artefacts_dir.mkdir(parents=True, exist_ok=True)
     path = artefacts_dir / ARTEFACTS.CONTEXT
     try:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -14,14 +15,20 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Idea:
+    """A divergent solution idea with panel ratings and dissents."""
+
     id: str
     text: str
     rating: float = 0.0
     panel_ratings: dict[str, float] = field(default_factory=dict)
     judge_rejections: dict[str, str] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        self.rating = _safe_float(self.rating)
+
 
 def dedupe_ideas(ideas: list[Idea], threshold: float = 0.7) -> list[Idea]:
+    """Remove near-duplicate ideas using Jaccard similarity on tokenized text."""
     kept: list[Idea] = []
     for idea in ideas:
         is_dup = any(jaccard_similarity(idea.text, k.text) >= threshold for k in kept)
@@ -31,7 +38,9 @@ def dedupe_ideas(ideas: list[Idea], threshold: float = 0.7) -> list[Idea]:
 
 
 def write_solution_candidates(artefacts_dir: Path, ideas: list[Idea]) -> Path:
-    _ensure_numeric_ratings(ideas)
+    """Write `04_solution_candidates.md` — Phase 4 divergent ideation output."""
+    for idea in ideas:
+        idea.rating = _safe_float(idea.rating)
     sorted_ideas = sorted(ideas, key=lambda i: i.rating, reverse=True)
     lines = [
         "# Solution Candidates (divergent ideation)",
@@ -57,16 +66,12 @@ def write_solution_candidates(artefacts_dir: Path, ideas: list[Idea]) -> Path:
     return write_artefact(artefacts_dir, ARTEFACTS.SOLUTION_CANDIDATES, lines)
 
 
-def _ensure_numeric_ratings(ideas: list[Idea]) -> None:
-    """Coerce non-numeric or NaN ratings to 0.0 in-place."""
-    import math
-
-    for idea in ideas:
-        try:
-            rating = float(idea.rating)
-            if math.isnan(rating) or math.isinf(rating):
-                idea.rating = 0.0
-            else:
-                idea.rating = rating
-        except (TypeError, ValueError):
-            idea.rating = 0.0
+def _safe_float(value: object) -> float:
+    """Coerce any value to a finite float, defaulting NaN/inf/errors to 0.0."""
+    try:
+        f = float(value)  # type: ignore[arg-type]
+        if math.isnan(f) or math.isinf(f):
+            return 0.0
+        return f
+    except (TypeError, ValueError):
+        return 0.0

@@ -15,12 +15,17 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class RankedSolution:
+    """A solution ranked after three-salvo research with aggregate + panel scores."""
+
     idea_id: str
     text: str
     research: str
     aggregate_score: float
     panel_scores: dict[str, float] = field(default_factory=dict)
     spread: float = 0.0
+
+    def __post_init__(self) -> None:
+        self.aggregate_score = _safe_score(self.aggregate_score)
 
 
 def _safe_score(score: float) -> float:
@@ -31,7 +36,7 @@ def _safe_score(score: float) -> float:
 
 
 def write_ranked_solutions(artefacts_dir: Path, solutions: list[RankedSolution]) -> Path:
-    # Normalise scores for stable sort
+    """Write `05_ranked_solutions.md` — Phase 5 post-research ranking."""
     for s in solutions:
         s.aggregate_score = _safe_score(s.aggregate_score)
     sorted_sols = sorted(solutions, key=lambda s: -s.aggregate_score)
@@ -62,6 +67,7 @@ def write_owner_pick(
     validation_notes: str,
     dissents: list[tuple[str, str]] | None = None,
 ) -> Path:
+    """Write `05_owner_pick.md` — Phase 5 owner's validated solution choice."""
     dissents = dissents or []
     lines = [
         "# Owner Pick (validated)",

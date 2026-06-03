@@ -33,7 +33,9 @@ def test_compile_deck_with_none_context(tmp_path: Path) -> None:
 
 def test_compile_deck_with_partial_artefacts(tmp_path: Path) -> None:
     """Some artefacts present, some missing — renders what's available."""
-    (tmp_path / "02_candidate_problem.md").write_text("## Candidate 1: Radar\nScore: 5", encoding="utf-8")
+    (tmp_path / "02_candidate_problem.md").write_text(
+        "## Candidate 1: Radar\nScore: 5", encoding="utf-8"
+    )
     (tmp_path / "05_owner_pick.md").write_text("## Owner Choice\nChose SAR", encoding="utf-8")
 
     result = compile_deck_md(tmp_path)

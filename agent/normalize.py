@@ -1,4 +1,8 @@
-"""Heuristic normalization for parsed problems."""
+"""Heuristic normalization for parsed problems.
+
+Assigns quality flags (vague, multi-problem, requires_hardware, out_of_scope)
+and deduplicates by source hash.
+"""
 
 from __future__ import annotations
 
@@ -45,7 +49,7 @@ class ProblemWithFlags(TypedDict, total=False):
 
 
 def assign_quality_flags(problem: Problem) -> list[QualityFlag]:
-    """Inspect a problem dict and return a list of quality flags."""
+    """Inspect a problem and return a list of quality flags."""
     flags: list[QualityFlag] = []
     text = f"{problem.get('name', '')} {problem.get('problem', '')}".lower()
     if len(problem.get("problem", "").strip()) < _VAGUE_LENGTH:
@@ -67,7 +71,7 @@ def _is_multi_problem(text: str) -> bool:
 def dedupe_problems(problems: list[Problem]) -> list[Problem]:
     """Remove duplicates by source_hash, keeping the first occurrence."""
     seen: set[str] = set()
-    out: list[dict] = []
+    out: list[Problem] = []
     sorted_problems = sorted(problems, key=lambda p: p.get("source_row", 0))
     for p in sorted_problems:
         h = p.get("source_hash", "")

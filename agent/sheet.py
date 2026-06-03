@@ -21,18 +21,24 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class BadQuestion:
+    """A question to AVOID — anti-pattern that violates Mom Test principles."""
+
     text: str
     why_bad: str
 
 
 @dataclass
 class GoodQuestion:
+    """A question to ASK — follows a specific Mom Test rule."""
+
     text: str
     mom_test_rule: str
 
 
 @dataclass
 class ClusterSheet:
+    """Question clusters for one problem area — with good and bad examples."""
+
     cluster_name: str
     good_questions: list[GoodQuestion]
     bad_questions: list[BadQuestion]
@@ -40,6 +46,8 @@ class ClusterSheet:
 
 @dataclass
 class QuestionSheet:
+    """Printable Mom Test interview guide with clusters, tips, and scoring."""
+
     clusters: list[ClusterSheet]
     mom_test_rules: list[str]
     interviewer_tips: list[str]
@@ -47,6 +55,7 @@ class QuestionSheet:
 
 
 def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
+    """Write `question_sheet.md` — standalone Mom Test interview guide."""
     lines = [
         "# Problem Owner Question Sheet",
         "",
@@ -75,14 +84,14 @@ def write_question_sheet(artefacts_dir: Path, sheet: QuestionSheet) -> Path:
         lines.append(f"## Cluster {ci}: {cluster.cluster_name}")
         lines.append("")
 
-        lines.append("### ↔ Ask These")
+        lines.append("### ✅ Ask These")
         lines.append("")
         for i, q in enumerate(cluster.good_questions, start=1):
             lines.append(f"**Q{ci}.{i}** — {q.text}")
             lines.append(f"  *Mom Test rule: {q.mom_test_rule}*")
             lines.append("")
 
-        lines.append("### ⚒ Avoid These")
+        lines.append("### ❌ Avoid These")
         lines.append("")
         for bq in cluster.bad_questions:
             lines.append(f'- *"{bq.text}"* — {bq.why_bad}')

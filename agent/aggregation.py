@@ -16,6 +16,7 @@ def _all_items(rankings: list[dict[str, int]]) -> list[str]:
 
 
 def borda_count(rankings: list[dict[str, int]]) -> list[str]:
+    """Rank items by sum of positions across judges (lower = better)."""
     scores: dict[str, float] = defaultdict(lambda: float("inf"))
     for item in _all_items(rankings):
         positions = [r[item] for r in rankings if item in r]
@@ -25,6 +26,11 @@ def borda_count(rankings: list[dict[str, int]]) -> list[str]:
 
 
 def weighted_borda(rankings: list[dict[str, int]], weights: Iterable[float]) -> list[str]:
+    """Borda count with per-judge weight multipliers.
+
+    Raises:
+        ValueError: if weights length does not match rankings length.
+    """
     weights = list(weights)
     if len(weights) != len(rankings):
         raise ValueError(
@@ -39,6 +45,7 @@ def weighted_borda(rankings: list[dict[str, int]], weights: Iterable[float]) -> 
 
 
 def approval_vote(approvals: list[set[str]]) -> list[str]:
+    """Rank items by approval count (most approvals first). Ties broken by first-seen order."""
     counts: dict[str, int] = defaultdict(int)
     order: list[str] = []
     for a in approvals:

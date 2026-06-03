@@ -11,7 +11,8 @@ import csv
 import hashlib
 import logging
 from pathlib import Path
-from typing import TypedDict
+
+from agent._models import Problem
 
 log = logging.getLogger(__name__)
 
@@ -43,14 +44,6 @@ class EmptyCsvError(ParseError):
 
 class TooManyProblemsError(ParseError):
     """Raised when the CSV has more than MAX_PROBLEMS rows."""
-
-
-class Problem(TypedDict):
-    id: str
-    name: str
-    problem: str
-    source_row: int
-    source_hash: str
 
 
 def _short_hash(name: str, problem: str) -> str:

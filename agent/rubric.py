@@ -1,4 +1,8 @@
-"""Judging rubric definitions and scoring math."""
+"""Judging rubric definitions and scoring math.
+
+Defines the RubricAxis StrEnum, default weighting, and weighted score
+computation. Used by triage, candidate ranking, and sub-problem ROI.
+"""
 
 from __future__ import annotations
 
@@ -22,10 +26,16 @@ DEFAULT_RUBRIC: dict[str, float] = {
 
 
 def get_axis_weights(rubric: Mapping[str, float]) -> dict[str, float]:
+    """Return axis weights as a plain dict from any Mapping."""
     return dict(rubric)
 
 
 def normalize_weights(weights: Mapping[str, float]) -> dict[str, float]:
+    """Normalize weights so they sum to 1.0.
+
+    Raises:
+        ValueError: if all weights are zero.
+    """
     total = sum(weights.values())
     if total == 0:
         raise ValueError("Cannot normalize: all weights are zero")
@@ -33,6 +43,11 @@ def normalize_weights(weights: Mapping[str, float]) -> dict[str, float]:
 
 
 def score_to_weighted(scores: Mapping[str, float], weights: Mapping[str, float]) -> float:
+    """Compute a weighted score given axis scores and rubric weights.
+
+    Raises:
+        KeyError: if any required weight axis is missing from scores.
+    """
     missing = set(weights.keys()) - set(scores.keys())
     if missing:
         raise KeyError(f"Missing scores for axes: {sorted(missing)}")

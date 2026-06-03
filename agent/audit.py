@@ -1,4 +1,9 @@
-"""Audit trail writer."""
+"""Audit trail writer.
+
+Records every agent interaction — prompts, responses, tool calls — as
+timestamped markdown files in artefacts/audit/. Truncates long responses
+at MAX_AUDIT_RESPONSE characters.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +32,8 @@ _PHASE_NAMES = {
 
 @dataclass
 class AuditEntry:
+    """A single agent interaction — prompts, responses, and tool calls for one phase."""
+
     phase: int
     phase_name: str
     prompts: list[str]
@@ -35,8 +42,13 @@ class AuditEntry:
     artefact_path: str
     extra: dict = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not (0 <= self.phase <= 8):
+            log.warning("AuditEntry phase %d is outside 0-8 range", self.phase)
+
 
 def write_audit_entry(artefacts_dir: Path, entry: AuditEntry) -> Path:
+    """Write a numbered audit markdown file for an agent interaction phase."""
     name = _PHASE_NAMES.get(entry.phase, f"phase_{entry.phase}")
     filename = f"{entry.phase:02d}_{name}.md"
     lines = [

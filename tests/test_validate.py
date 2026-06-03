@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from agent.validate import run_validation
+from agent.validate import preflight_check, run_validation
 
 
 def test_empty_dir_returns_issues(tmp_path: Path) -> None:
@@ -133,3 +133,40 @@ def test_validate_loud_prints_on_success(capsys, tmp_path: Path) -> None:
     assert passes
     captured = capsys.readouterr()
     assert "✅" in captured.out
+
+
+def test_preflight_check_no_deps_passes(tmp_path: Path) -> None:
+    """Phase 1 has no dependencies — should always pass."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    ok, issues = preflight_check(artefacts, 1)
+    assert ok
+    assert not issues
+
+
+def test_preflight_check_missing_dep_fails(tmp_path: Path) -> None:
+    """Phase 3 depends on 02_candidate_problem.md — fail if missing."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    ok, issues = preflight_check(artefacts, 3)
+    assert not ok
+    assert any("02_candidate_problem" in i for i in issues)
+
+
+def test_preflight_check_empty_dep_fails(tmp_path: Path) -> None:
+    """Phase 3 depends on 02_candidate_problem.md — fail if empty."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    (artefacts / "02_candidate_problem.md").write_text("")
+    ok, issues = preflight_check(artefacts, 3)
+    assert not ok
+    assert any("Empty" in i for i in issues)
+
+
+def test_preflight_check_valid_dep_passes(tmp_path: Path) -> None:
+    """Phase 3 — non-empty dep should pass."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    (artefacts / "02_candidate_problem.md").write_text("## Candidate 1\nScore: 4.5\n")
+    ok, _issues = preflight_check(artefacts, 3)
+    assert ok

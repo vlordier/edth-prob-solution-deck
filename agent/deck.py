@@ -18,10 +18,10 @@ from agent._util import slurp_file, write_artefact
 log = logging.getLogger(__name__)
 
 
-def compile_deck_md(artefacts_dir: Path, context: dict | None = None) -> str:
+def compile_deck_md(artefacts_dir: Path, context: DeckContext | None = None) -> str:
     """Produce a single Marp-flavoured markdown string from artefacts.
 
-    Accepts a DeckContext-compatible dict or None (falls back to defaults).
+    Accepts a DeckContext or None (falls back to defaults).
     """
     ctx: DeckContext = dict(DECK_CONTEXT_DEFAULTS, **(context or {}))
     hackathon = ctx.get("hackathon_name", DECK_CONTEXT_DEFAULTS["hackathon_name"])
@@ -76,7 +76,7 @@ def compile_deck_md(artefacts_dir: Path, context: dict | None = None) -> str:
     )
 
 
-def render_deck(artefacts_dir: Path, context: dict | None = None) -> Path:
+def render_deck(artefacts_dir: Path, context: DeckContext | None = None) -> Path:
     """Compile the deck markdown, write it, and render to the best available format.
 
     Render order: Marp > pptx > HTML fallback.

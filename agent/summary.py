@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class JudgeVerdict:
+    """A single judge's 👍/👎 with one-line reasoning."""
+
     judge: str
     thumbs_up: bool
     note: str
@@ -21,6 +23,8 @@ class JudgeVerdict:
 
 @dataclass
 class Summary:
+    """One-page final summary — pitch, differentiators, risks, panel verdict, next steps."""
+
     pitch: str
     top_risks: list[str]
     top_differentiators: list[str]
@@ -29,6 +33,7 @@ class Summary:
 
 
 def write_summary(artefacts_dir: Path, summary: Summary) -> Path:
+    """Write `08_summary.md` — Phase 8 final one-page summary with panel verdict."""
     ups = sum(1 for v in summary.verdicts if v.thumbs_up)
     downs = len(summary.verdicts) - ups
     lines = [
@@ -51,10 +56,10 @@ def write_summary(artefacts_dir: Path, summary: Summary) -> Path:
     lines.append("")
     lines.append("## Panel Verdict")
     lines.append("")
-    lines.append(f"**{ups} \u2611  {downs} \u2612**")
+    lines.append(f"**{ups} 👍  {downs} 👎**")
     lines.append("")
     for v in summary.verdicts:
-        icon = "\u2611" if v.thumbs_up else "\u2612"
+        icon = "👍" if v.thumbs_up else "👎"
         lines.append(f"- **{v.judge}** {icon} — {v.note}")
     lines.append("")
     lines.append("## Next Steps (48h)")

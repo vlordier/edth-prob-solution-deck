@@ -15,21 +15,31 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Cluster:
+    """A cluster of related problems scored against the judging rubric axes."""
+
     name: str
     themes: list[str]
     problem_ids: list[str]
     scores: dict[str, float]
     market_signal: str = ""
 
+    def __post_init__(self) -> None:
+        missing = set(DEFAULT_RUBRIC) - self.scores.keys()
+        if missing:
+            log.warning("Cluster '%s' missing rubric axes: %s", self.name, sorted(missing))
+
 
 @dataclass
 class TriageReport:
+    """The output of Phase 1 triage — clustered problems with panel summary."""
+
     clusters: list[Cluster]
     panel_summary: str = ""
     notes: str = ""
 
 
 def write_triage_report(artefacts_dir: Path, report: TriageReport) -> Path:
+    """Write `01_triage.md` — Phase 1 triage output with cluster scores."""
     lines: list[str] = ["# Triage Report", ""]
     for i, cluster in enumerate(report.clusters, start=1):
         try:
