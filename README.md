@@ -86,8 +86,10 @@ All commands in OpenCode or Claude Code chat:
 | `/edth-agent review` | Submit a draft deck to all 12 judges for live Q&A |
 | `/edth-agent sheet` | Generate a printable Mom Test question sheet |
 | `/edth-agent panel viper` | Chat with a judge in character |
-| `/edth-agent validate` | Check all artefacts for issues |
+| `/edth-agent validate` | Check all artefacts for issues (incl. deck design audit) |
 | `/edth-agent skip-to 5` | Jump to ranking with stub phases |
+
+Built-in coaching passes: narrative arc coaching (forces battlefield story), hostile Q&A simulation (12 judges attack your deck, top 3 dangerous questions identified with prepared responses), deck design audit (word density, color count, oversized images).
 
 After each phase: "Approve? (y/edit/redo)".
 
@@ -111,7 +113,7 @@ artefacts/
 | **Validate** | Decompose into sub-problems, ROI-score, panel reviews → pick slice |
 | **Ideate** | 7 divergent techniques, 20+ ideas, panel rates 1-5 → top 5 |
 | **Rank** | Web research, panel re-rank, owner validates → winner |
-| **Ship** | Demo plan, market/competition/BM, 8-slide deck rendered |
+| **Ship** | Demo plan, market/competition/BM, deck design audit, hostile Q&A simulation, narrative arc coaching, 8-slide deck rendered |
 
 ## Judges
 
