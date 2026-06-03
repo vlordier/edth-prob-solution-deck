@@ -129,6 +129,15 @@ uv run pytest   # 241 tests (0 ruffs expected)
 uv run ruff check agent/ tests/         # Python lint (0 errors)
 ```
 
+## Auto-updates
+
+| What | How |
+|---|---|
+| Python deps | Dependabot opens PRs weekly (Monday 06:00 CET) — `uv sync --upgrade` to apply |
+| GitHub Actions | Dependabot bumps action versions automatically |
+| pre-commit hooks | Weekly GitHub Action runs `pre-commit autoupdate`, opens PR if changed |
+| Manual | `uv sync --upgrade` then `pre-commit autoupdate && pre-commit install --install-hooks` |
+
 ## Project
 
 | What | Where |

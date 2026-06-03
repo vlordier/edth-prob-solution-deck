@@ -70,9 +70,9 @@ else
     fi
 fi
 
-# ── Sync Python deps ──
-info "Syncing Python dependencies..."
-uv sync --all-groups 2>&1 | tail -3
+# ── Sync Python deps (upgrade to latest compatible) ──
+info "Syncing Python dependencies (latest compatible)..."
+uv sync --all-groups --upgrade 2>&1 | tail -3
 
 # ── Set up pre-commit hooks ──
 if command -v pre-commit &>/dev/null; then
@@ -101,4 +101,4 @@ echo "    cd $(pwd)"
 echo "    opencode           # or: claude"
 echo "    /edth-agent dry-run"
 echo ""
-echo "  If pre-commit is installed, ruff + markdownlint will run on every commit."
+echo "  If pre-commit is installed, ruff will run on every commit."

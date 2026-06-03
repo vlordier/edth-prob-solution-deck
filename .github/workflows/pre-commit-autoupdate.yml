@@ -1,0 +1,45 @@
+# Pre-commit hook auto-update — runs weekly, opens PR if new versions exist
+# https://pre-commit.ci/ is the hosted version; this is the self-hosted alternative
+name: pre-commit autoupdate
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # every Monday 06:00 UTC
+  workflow_dispatch:      # manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install pre-commit
+        run: uv tool install pre-commit
+
+      - name: Run pre-commit autoupdate
+        run: uv tool run pre-commit autoupdate
+
+      - name: Open PR if changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump pre-commit hooks"
+          branch: deps/pre-commit-autoupdate
+          title: "chore: bump pre-commit hooks"
+          body: |
+            Automated `pre-commit autoupdate` run.
+
+            Review and merge if CI passes.
+          labels: dependencies
