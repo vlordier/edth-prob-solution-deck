@@ -32,7 +32,7 @@ jobs:
         run: uv tool run pre-commit autoupdate
 
       - name: Open PR if changed
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: bump pre-commit hooks"
