@@ -91,6 +91,7 @@ EXPECTED_CALLS = [
     ("personas", "load_persona"),
     ("validate", "run_validation"),
     ("validate", "preflight_check"),
+    ("validate", "audit_deck_design"),
 ]
 
 
@@ -179,6 +180,8 @@ def test_all_reference_files_exist() -> None:
         "prompts/review.md",
         "prompts/setup.md",
         "prompts/monday-morning.md",
+        "prompts/hostile-qa.md",
+        "prompts/narrative-arc.md",
         "judges.md",
     ]
     for path in expected:

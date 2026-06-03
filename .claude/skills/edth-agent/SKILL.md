@@ -110,6 +110,8 @@ Artefacts under `artefacts/`. State resumable via `artefacts/state.json`.
 - Competitive Landscape Pass — after Phase 2. See `references/prompts/competitive-landscape.md`.
 - Innovation Competitive Scan — during Phase 4. See `references/prompts/phase-4.md`.
 - One-Sentence Clarity — after Phase 5. See `references/prompts/clarity.md`.
+- Narrative Arc Coaching — after One-Sentence Clarity. See `references/prompts/narrative-arc.md`.
+- Hostile Q&A Simulation — during Phase 7. See `references/prompts/hostile-qa.md`.
 - Pitch Review — after Phase 7 or ad-hoc. See `references/prompts/review.md`.
 
 ## Panel system
@@ -270,6 +272,13 @@ Runs after Phase 5. Read `references/prompts/clarity.md`, then:
 2. Execute prompt. Interactive check only — no file written.
 3. Record the final sentence in the audit entry.
 
+#### Narrative Arc Coaching
+
+Runs after One-Sentence Clarity. Read `references/prompts/narrative-arc.md`, then:
+1. `⚙️  Narrative Arc — forcing the battlefield story...`
+2. Execute prompt: battlefield failure → concrete cost → one-sentence solution → mechanism → next steps.
+3. Print the 90-second arc to console. Tell the team to tape it to their monitor.
+
 ### Phase 6 — Demo & narrative
 
 Read `references/prompts/phase-6.md` (demo plan) and `references/prompts/task-assignment.md`, then:
@@ -294,8 +303,10 @@ Read `references/prompts/phase-7.md`, then:
 5. Compile deck via `agent.deck.compile_deck_md()`. Render via `agent.deck.render_deck()`.
 6. `✅ Phase 7 — Deck: rendered to artefacts/07_deck.html.`
 7. Panel reviews slides.
-8. `mark_phase_completed(state, 7, artefacts_dir / "07_deck.md")`. Save state.
-9. Validate, time + timebox, audit, approve.
+8. **Deck design audit:** Run `agent.validate.audit_deck_design()` — flag word density, color count, oversized images. Print actionable fixes.
+9. **Hostile Q&A:** Read `references/prompts/hostile-qa.md` and execute. Subagent per judge, collect attacks, identify top 3 dangerous questions with prepared responses. Write to `artefacts/hostile_qa.md`.
+10. `mark_phase_completed(state, 7, artefacts_dir / "07_deck.md")`. Save state.
+11. Validate, time + timebox, audit, approve.
 
 ### Phase 8 — Final review
 

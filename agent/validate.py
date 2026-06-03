@@ -8,6 +8,7 @@ See SKILL.md "Validate command" section.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from agent._constants import ARTEFACTS, MIN_SIZES, PHASE_COUNT, PHASE_DEPENDENCIES
@@ -189,6 +190,62 @@ def _validate_phase_7(artefacts_dir: Path, issues: list[str]) -> None:
                 )
         except OSError:
             issues.append(f"{ARTEFACTS.DECK_HTML}: could not be read")
+
+    audit_deck_design(artefacts_dir, issues)
+
+
+def audit_deck_design(artefacts_dir: Path, issues: list[str]) -> None:
+    """Audit deck visual design: word density, color count, image hygiene."""
+    md_path = artefacts_dir / ARTEFACTS.DECK_MD
+    if not md_path.exists():
+        return
+    text = slurp_file(artefacts_dir, ARTEFACTS.DECK_MD)
+    slides = [s.strip() for s in text.split("\n---\n") if s.strip()]
+
+    for i, slide in enumerate(slides, 1):
+        content_only = slide.split("<!--")[0] if "<!--" in slide else slide
+        content_words = len([w for w in content_only.split() if not w.startswith("_class")])
+        if content_words > 40:
+            issues.append(
+                f"{ARTEFACTS.DECK_MD}: slide {i} has {content_words} words "
+                f"(max 40 per slide). Cut to 20\u201325."
+            )
+
+    if (artefacts_dir / ARTEFACTS.DECK_HTML).exists():
+        html = slurp_file(artefacts_dir, ARTEFACTS.DECK_HTML)
+        hex_colors = set()
+        i = 0
+        while i < len(html):
+            pos = html.find("#", i)
+            if pos == -1:
+                break
+            candidate = html[pos : pos + 7]
+            if len(candidate) == 7 and all(c in "0123456789abcdefABCDEF" for c in candidate[1:]):
+                hex_colors.add(candidate)
+            i = pos + 1
+        # Filter common non-design colors
+        design_colors = {
+            c
+            for c in hex_colors
+            if c not in ("#000000", "#ffffff", "#0000ff", "#ff0000", "#00ff00", "#ffff00")
+        }
+        if len(design_colors) > 5:
+            issues.append(
+                f"{ARTEFACTS.DECK_HTML}: {len(design_colors)} unique design colors found "
+                f"(max 3\u20135 recommended). Too many colors = amateur."
+            )
+
+    # Check for oversized images in markdown
+    img_pattern = re.compile(r"!\[.*?\]\((.+?)\)")
+    for match in img_pattern.finditer(text):
+        img_path_str = match.group(1)
+        img_path = artefacts_dir / img_path_str
+        if img_path.exists() and img_path.stat().st_size > 500_000:
+            issues.append(
+                f"{ARTEFACTS.DECK_MD}: image {img_path_str} is "
+                f"{img_path.stat().st_size / 1024:.0f} KB "
+                f"(keep under 500 KB for fast loading)"
+            )
 
 
 def _validate_phase_8(artefacts_dir: Path, issues: list[str]) -> None:

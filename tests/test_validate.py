@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from agent.validate import preflight_check, run_validation
+from agent.validate import audit_deck_design, preflight_check, run_validation
 
 
 def test_empty_dir_returns_issues(tmp_path: Path) -> None:
@@ -170,3 +170,37 @@ def test_preflight_check_valid_dep_passes(tmp_path: Path) -> None:
     (artefacts / "02_candidate_problem.md").write_text("## Candidate 1\nScore: 4.5\n")
     ok, _issues = preflight_check(artefacts, 3)
     assert ok
+
+
+def test_audit_deck_design_word_density(tmp_path: Path) -> None:
+    """Slide with >40 content words gets flagged."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    deck = artefacts / "07_deck.md"
+    deck.write_text(
+        "---\nmarp: true\n---\n\n"
+        + "This slide has way too many words it keeps going and going and nobody will read "
+        "this because judges scan slides not read them this is terrible design fix it now "
+        "forty three words is way past the limit we set of forty get it under control.\n"
+    )
+    issues: list[str] = []
+    audit_deck_design(artefacts, issues)
+    assert any("slide 2 has" in i and "words" in i for i in issues)
+
+
+def test_audit_deck_design_clean_passes(tmp_path: Path) -> None:
+    """Short slide with few words passes."""
+    artefacts = tmp_path / "artefacts"
+    artefacts.mkdir()
+    deck = artefacts / "07_deck.md"
+    deck.write_text("---\nmarp: true\n---\n\nHello world\n")
+    issues: list[str] = []
+    audit_deck_design(artefacts, issues)
+    assert not issues
+
+
+def test_audit_deck_design_no_file_skips(tmp_path: Path) -> None:
+    """No deck.md exists — skips silently."""
+    issues: list[str] = []
+    audit_deck_design(tmp_path, issues)
+    assert not issues
