@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agent.render import best_renderer, detect_marp, has_marp, has_pptx, render_html_deck
+from agent.render import (
+    best_renderer,
+    detect_marp,
+    has_marp,
+    has_pptx,
+    render_html_deck,
+    render_pptx_deck,
+)
 
 
 def test_detect_marp() -> None:
@@ -21,6 +28,36 @@ def test_has_pptx() -> None:
 
 def test_best_renderer_returns_string() -> None:
     assert best_renderer() in ("marp", "pptx", "html")
+
+
+def test_render_pptx_deck_creates_file(tmp_path: Path) -> None:
+    md_text = "# Title\n\nContent\n\n---\n\n## Slide 2\n\nMore\n"
+    path = render_pptx_deck(tmp_path, md_text)
+    assert path.exists()
+    assert path.stat().st_size > 0
+    assert path.suffix == ".pptx"
+
+
+def test_render_pptx_deck_empty_content(tmp_path: Path) -> None:
+    path = render_pptx_deck(tmp_path, "")
+    assert path.exists()
+    assert path.stat().st_size > 0
+
+
+def test_render_pptx_deck_nested_artefacts_dir(tmp_path: Path) -> None:
+    nested = tmp_path / "a" / "b" / "c"
+    path = render_pptx_deck(nested, "# Hello\n\n---\n\n## World\n")
+    assert path.exists()
+    assert path.stat().st_size > 0
+
+
+def test_render_pptx_deck_correct_number_of_slides(tmp_path: Path) -> None:
+    from pptx import Presentation
+
+    md_text = "# One\n\n---\n\n## Two\n\n---\n\n## Three\n"
+    path = render_pptx_deck(tmp_path, md_text)
+    prs = Presentation(str(path))
+    assert len(prs.slides) == 3
 
 
 def test_render_html_deck(tmp_path: Path) -> None:

@@ -1,4 +1,4 @@
-You are decomposing a chosen problem into tractable sub-problems. Read the
+Decompose a chosen problem into tractable sub-problems. Read the
 chosen problem from `artefacts/02_candidate_problem.md` (the one the user selected,
 recorded in state.json decisions.chosen_problem_id).
 

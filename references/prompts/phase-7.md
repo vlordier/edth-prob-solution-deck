@@ -1,4 +1,4 @@
-You are producing the final pitch deck. Read all prior artefacts.
+Produce the final pitch deck. Read all prior artefacts.
 
 **Knock-off question:** "What's the minimum the judge needs to understand why this
 matters, how it works, and why it's different?" Cut everything that doesn't

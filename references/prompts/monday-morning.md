@@ -1,8 +1,8 @@
 # Monday Morning (runs after Phase 8 — post-hackathon)
 
-You are preparing the team for what happens AFTER the hackathon.
+Prepare the team for what happens AFTER the hackathon.
 Read all artefacts. EDTH's mission: "Put you in a position to continue
-towards deployment." This pass bridges demo day to deployment.
+towards deployment." Bridge demo day to deployment.
 
 ---
 

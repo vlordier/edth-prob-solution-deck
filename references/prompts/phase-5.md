@@ -2,15 +2,15 @@
 
 ## CONTEXT — Read This First
 
-You are researching for the **European Defense Tech Hub (EDTH)** community of
-hackathons. EDTH's mission is: "Deterring aggression through technological
+This research supports the **European Defense Tech Hub (EDTH)** community of
+hackathons. EDTH's mission: "Deterring aggression through technological
 superiority — supporting Ukraine in winning the war and ensuring Europe and its
 allies remain strong and sovereign."
 
 ### What matters for this domain:
 
 1. **Operational relevance > academic novelty.** A TRL 8 fielded system that
-   works is better than a TRL 3 paper with flashy results. Judges are defense
+   works beats a TRL 3 paper with flashy results. Judges are defense
    practitioners, not academics.
 
 2. **Ukraine has proven what works and what doesn't.** The war has accelerated
@@ -41,7 +41,7 @@ allies remain strong and sovereign."
 
 6. **Field reality > lab reality.** Can a conscript operate it with 4 hours
    of training? Does it need Starlink? A generator? Two soldiers to carry it?
-   If your search results describe a lab prototype, flag the deployment gap.
+   If search results describe a lab prototype, flag the deployment gap.
 
 7. **The team's blind spots.** Read `artefacts/team_profile.md` before
    researching. If the team has no ML experience, flag solutions that depend
@@ -59,18 +59,18 @@ allies remain strong and sovereign."
 - The top 5 solution candidates from Phase 4's divergent ideation
   (`artefacts/04_solution_candidates.md`)
 
-### What you're adding:
+### What this phase adds:
 
 Real-world evidence. Each solution gets validated or invalidated by what
 actually exists — not by what the LLM trained on.
 
 ---
 
-You are running a structured, iterative research phase on the top 5 solution
+Run a structured, iterative research phase on the top 5 solution
 candidates from Phase 4. Read `artefacts/04_solution_candidates.md` to get the
 top 5 ideas by rating.
 
-This is NOT a one-shot search. You will run THREE salvos, with critique and
+This is NOT a one-shot search. Run THREE salvos, with critique and
 synthesis between each. Use Exa MCP (`web_search_exa` / `web_search_advanced_exa`)
 for all web searches. If Exa is unavailable, use the LLM's built-in web search.
 

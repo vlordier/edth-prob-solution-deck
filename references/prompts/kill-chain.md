@@ -1,4 +1,4 @@
-You are mapping the chosen sub-problem to battlefield reality — kill chain
+Map the chosen sub-problem to battlefield reality — kill chain
 position, European defense priorities, and Ukraine's proven lessons.
 
 Read `artefacts/03_chosen_sub_problem.md` for the chosen sub-problem

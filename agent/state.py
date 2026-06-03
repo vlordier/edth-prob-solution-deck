@@ -10,18 +10,30 @@ import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from agent._constants import ARTEFACTS, PHASE_COUNT
 
 log = logging.getLogger(__name__)
 
 
+class AgentState(TypedDict, total=False):
+    version: str
+    started_at: str | None
+    updated_at: str | None
+    current_phase: int
+    config: dict[str, Any]
+    phases: dict[str, dict[str, Any]]
+    decisions: dict[str, Any]
+    panel: dict[str, Any]
+    branches: dict[str, Any]
+
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def empty_state() -> dict[str, Any]:
+def empty_state() -> AgentState:
     return {
         "version": "0.1.0",
         "started_at": None,
@@ -58,7 +70,7 @@ def empty_state() -> dict[str, Any]:
     }
 
 
-def load_state(artefacts_dir: Path) -> dict[str, Any]:
+def load_state(artefacts_dir: Path) -> AgentState:
     state_path = artefacts_dir / ARTEFACTS.STATE
     if not state_path.exists():
         return {}
@@ -91,7 +103,7 @@ def load_state(artefacts_dir: Path) -> dict[str, Any]:
     return data
 
 
-def save_state(artefacts_dir: Path, state: dict[str, Any]) -> Path:
+def save_state(artefacts_dir: Path, state: AgentState) -> Path:
     artefacts_dir.mkdir(parents=True, exist_ok=True)
     state["updated_at"] = _now_iso()
     if state.get("started_at") is None:
@@ -108,13 +120,13 @@ def save_state(artefacts_dir: Path, state: dict[str, Any]) -> Path:
     return state_path
 
 
-def get_phase_status(state: dict[str, Any], phase: int) -> str:
+def get_phase_status(state: AgentState, phase: int) -> str:
     if not state:
         return "pending"
     return state["phases"][str(phase)]["status"]
 
 
-def mark_phase_completed(state: dict[str, Any], phase: int, artefact_path: Path) -> dict[str, Any]:
+def mark_phase_completed(state: AgentState, phase: int, artefact_path: Path) -> AgentState:
     state["phases"][str(phase)] = {
         "status": "completed",
         "artefact": str(artefact_path),
@@ -124,7 +136,7 @@ def mark_phase_completed(state: dict[str, Any], phase: int, artefact_path: Path)
     return state
 
 
-def set_config(state: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+def set_config(state: AgentState, **kwargs: Any) -> AgentState:
     for key, value in kwargs.items():
         if key not in state["config"]:
             raise KeyError(f"Unknown config key: {key!r}")
@@ -132,7 +144,7 @@ def set_config(state: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
     return state
 
 
-def set_decision(state: dict[str, Any], key: str, value: Any) -> dict[str, Any]:
+def set_decision(state: AgentState, key: str, value: Any) -> AgentState:
     if key not in state["decisions"]:
         raise KeyError(f"Unknown decision key: {key!r}")
     state["decisions"][key] = value
@@ -140,8 +152,8 @@ def set_decision(state: dict[str, Any], key: str, value: Any) -> dict[str, Any]:
 
 
 def lock_panel(
-    state: dict[str, Any], judge_shorts: list[str], manually_overridden: bool = False
-) -> dict[str, Any]:
+    state: AgentState, judge_shorts: list[str], manually_overridden: bool = False
+) -> AgentState:
     state["panel"] = {
         "auto_selected": list(judge_shorts),
         "manually_overridden": manually_overridden,
@@ -150,7 +162,7 @@ def lock_panel(
     return state
 
 
-def mark_phase_in_progress(state: dict[str, Any], phase: int) -> dict[str, Any]:
+def mark_phase_in_progress(state: AgentState, phase: int) -> AgentState:
     state["phases"][str(phase)] = {
         "status": "in_progress",
         "artefact": None,
@@ -160,7 +172,7 @@ def mark_phase_in_progress(state: dict[str, Any], phase: int) -> dict[str, Any]:
     return state
 
 
-def rollback_phase(state: dict[str, Any], phase: int) -> dict[str, Any]:
+def rollback_phase(state: AgentState, phase: int) -> AgentState:
     state["phases"][str(phase)] = {
         "status": "pending",
         "artefact": None,
@@ -170,7 +182,7 @@ def rollback_phase(state: dict[str, Any], phase: int) -> dict[str, Any]:
     return state
 
 
-def elapsed_minutes(state: dict[str, Any]) -> float | None:
+def elapsed_minutes(state: AgentState) -> float | None:
     started = state.get("started_at")
     if not started:
         return None
@@ -178,7 +190,7 @@ def elapsed_minutes(state: dict[str, Any]) -> float | None:
     return (datetime.now(UTC) - started_dt).total_seconds() / 60.0
 
 
-def expected_phases_remaining(state: dict[str, Any]) -> int:
+def expected_phases_remaining(state: AgentState) -> int:
     completed = sum(
         1
         for p in range(PHASE_COUNT)

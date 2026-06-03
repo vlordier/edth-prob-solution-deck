@@ -1,5 +1,5 @@
-You are decomposing the chosen solution into concrete implementation
-tasks and assigning them to specific team members.
+Decompose the chosen solution into concrete implementation
+tasks and assign them to specific team members.
 
 Read `artefacts/team_profile.md` and `artefacts/05_owner_pick.md`.
 

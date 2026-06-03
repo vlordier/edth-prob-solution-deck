@@ -1,9 +1,9 @@
-You are generating structured owner questions for the top 3 problem clusters
+Generate structured owner questions for the top 3 problem clusters
 from Phase 1, following The Mom Test methodology (Rob Fitzpatrick).
 
-Read `artefacts/01_triage.md` to get the clusters and their problem IDs.
+Read `artefacts/01_triage.md`. Get the clusters and their problem IDs.
 
-IMPORTANT: these problem owners are soldiers, pilots, drone operators, EW
+These problem owners are soldiers, pilots, drone operators, EW
 specialists, tank commanders — not procurement officers. Adapt your language.
 
 CRITICAL RULES — The Mom Test (operator edition):

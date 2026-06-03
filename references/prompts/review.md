@@ -1,4 +1,4 @@
-You are convening the full 12-judge panel to review a pitch deck.
+Convene the full 12-judge panel to review a pitch deck.
 The user has a draft — either an uploaded PDF, a rendered HTML
 deck, or the markdown at `artefacts/07_deck.md`.
 

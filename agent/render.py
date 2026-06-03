@@ -135,6 +135,7 @@ def render_pptx_deck(artefacts_dir: Path, md_text: str) -> Path:
 
     from agent._constants import ARTEFACTS
 
+    artefacts_dir.mkdir(parents=True, exist_ok=True)
     prs = pptx.Presentation()
     prs.slide_width = Inches(16)
     prs.slide_height = Inches(9)

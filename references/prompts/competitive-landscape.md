@@ -1,11 +1,11 @@
 # Competitive Landscape Pass (runs after Phase 2)
 
-You are mapping the competitive landscape for the chosen problem.
+Map the competitive landscape for the chosen problem.
 Read `artefacts/02_candidate_problem.md` — specifically the candidate
 the user selected (recorded in state.json decisions.chosen_problem_id).
 
-This pass runs BEFORE sub-problem decomposition. The goal is to
-understand who else is solving this problem, how, and at what cost —
+This pass runs BEFORE sub-problem decomposition. Understand
+who else is solving this problem, how, and at what cost —
 so the team doesn't waste 48 hours rebuilding something that exists.
 
 Use Exa MCP for all web searches. If unavailable, use built-in tools.
@@ -49,7 +49,7 @@ List: what it is, why it's NOT your solution, what it DOES solve.
 
 ---
 
-## ASSESS — your competitive position
+## ASSESS — competitive position
 
 Answer in 2-3 sentences each:
 

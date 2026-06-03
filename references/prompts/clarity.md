@@ -1,4 +1,4 @@
-You are forcing the team to state their project in ONE sentence.
+Force the team to state their project in ONE sentence.
 
 Read `artefacts/05_owner_pick.md` for the chosen solution.
 Read `artefacts/team_profile.md` for the team's capabilities.

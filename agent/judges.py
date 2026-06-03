@@ -6,6 +6,7 @@ import logging
 import shutil
 from datetime import UTC
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -54,7 +55,7 @@ def load_judge_library(judges_dir: Path) -> list[Judge]:
     return out
 
 
-def add_judge(judges_dir: Path, data: dict) -> Judge:
+def add_judge(judges_dir: Path, data: dict[str, Any]) -> Judge:
     """Create a new judge YAML file. Validates before writing.
 
     Args:
@@ -86,7 +87,7 @@ def add_judge(judges_dir: Path, data: dict) -> Judge:
     return validated
 
 
-def update_judge(judges_dir: Path, short_name: str, data: dict) -> Judge:
+def update_judge(judges_dir: Path, short_name: str, data: dict[str, Any]) -> Judge:
     """Update an existing judge. Merges provided fields over the existing YAML.
 
     The existing file is backed up to judges/backups/<short>.yaml.bak.<timestamp>.
@@ -148,7 +149,7 @@ def remove_judge(judges_dir: Path, short_name: str) -> None:
     path.rename(backup_dir / f"{short_name}.yaml.removed.{ts}")
 
 
-def list_judges_full(judges_dir: Path) -> list[dict]:
+def list_judges_full(judges_dir: Path) -> list[dict[str, Any]]:
     """List all judges with metadata: name, short, tags, custom flag, file path."""
     out = []
     for short in list_judges(judges_dir):
