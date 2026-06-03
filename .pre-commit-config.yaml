@@ -4,7 +4,7 @@
 repos:
   # Ruff — fast Python linter & formatter (Rust, ~0.01s)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.8
+    rev: v0.15.15
     hooks:
       - id: ruff
         args: [--fix]
@@ -12,7 +12,7 @@ repos:
 
   # Prevent committing real input CSVs or large artefacts
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-merge-conflict
       - id: check-case-conflict
