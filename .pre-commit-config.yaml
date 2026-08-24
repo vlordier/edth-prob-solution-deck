@@ -4,7 +4,7 @@
 repos:
   # Ruff — fast Python linter & formatter (Rust, ~0.01s)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.16.4
     hooks:
       - id: ruff
         args: [--fix]
